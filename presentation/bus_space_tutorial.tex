@@ -1,0 +1,370 @@
+\documentclass[dvipsnames,table]{beamer}
+
+\usetheme{Frankfurt}
+\usecolortheme{orchid}
+
+\usepackage{listings}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{wasysym}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{caption}[numbered]
+\setbeamerfont{caption}{size=\scriptsize}
+\setbeamercolor{framenote}{bg=NetBSD-orange!25}
+\setbeamercolor{rednote}{bg=Red!25}
+\setbeamercolor{palette primary}{use=structure,fg=white,bg=NetBSD-orange}
+\setbeamercolor{palette secondary}{use=structure,fg=white,bg=NetBSD-orange2}
+
+\setbeamertemplate{itemize item}{\scriptsize\raise1pt\hbox{\donotcoloroutermaths$\blacktriangleright$}}
+\setbeamertemplate{itemize subitem}{\tiny\raise1pt\hbox{\donotcoloroutermaths$\bullet$}}
+\setbeamertemplate{itemize subsubitem}{\tiny\raise1pt\hbox{\donotcoloroutermaths{--}}}
+
+\setbeamertemplate{enumerate item}{\insertenumlabel.}
+\setbeamertemplate{enumerate subitem}{\insertenumlabel.\insertsubenumlabel}
+\setbeamertemplate{enumerate subsubitem}{\insertenumlabel.\insertsubenumlabel.\insertsubsubenumlabel}
+\setbeamertemplate{enumerate mini template}{\insertenumlabel}
+
+\setbeamercolor{itemize item}{fg=NetBSD-orange, bg=NetBSD-orange}
+\setbeamercolor{itemize subitem}{fg=NetBSD-orange, bg=NetBSD-orange}
+\setbeamercolor{itemize subsubitem}{fg=NetBSD-orange, bg=NetBSD-orange}
+
+\setbeamercolor{section number projected}{fg=white,bg=NetBSD-orange}
+\setbeamercolor{subsection number projected}{fg=white,bg=NetBSD-orange}
+\setbeamertemplate{section in toc}[circle]
+\setbeamertemplate{subsection in toc}[square]
+
+\definecolor{NetBSD-orange}{RGB}{242,103,17}
+\definecolor{NetBSD-orange2}{RGB}{177,76,12}
+\hypersetup{colorlinks=true,linkcolor=white,urlcolor=NetBSD-orange}
+
+\setlength{\tabcolsep}{8pt}
+\renewcommand{\arraystretch}{1.2}
+
+\newcommand{\nbsdcolor}[1] {
+	{\color{NetBSD-orange} #1}
+}
+
+\lstset{
+   language=bash,
+   basicstyle=\footnotesize,
+   breaklines=true,
+   escapechar=\@,
+   commentstyle=\color{NetBSD-orange}
+}
+
+\title{Writing the NetBSD drivers\\with bus\_space(9) framework}
+
+\author{Radoslaw Kujawa -- rkujawa@NetBSD.org}
+
+\institute{The NetBSD Foundation}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}[allowframebreaks]
+\frametitle{Table of Contents}
+{
+\hypersetup{colorlinks=true,linkcolor=black,urlcolor=NetBSD-orange}
+\tableofcontents
+}
+\end{frame}
+
+\section{Introduction}
+\subsection{Why was this tutorial created?}
+
+\begin{frame}
+\frametitle{Why was this tutorial created?}
+
+\begin{itemize}
+	\item Introductory-level documentation is scarce
+	\item Writing the device drivers is often considered black magic
+	\item Reading the {\tt man} pages won't give you the big picture
+	\item BSD systems are always in need of new drivers
+	\item Device drivers are fun {\Large \smiley}
+\end{itemize}
+\end{frame}
+
+\subsection{What won't be covered here?}
+
+\begin{frame}
+\frametitle{What won't be covered here?}
+
+We don't have much time, so several advanced topics were omitted:
+
+\begin{itemize}
+	\item Interrupt handling
+	\item Direct Memory Access and {\tt bus\_dma} framework
+	\item Power management
+	\item Driver detachment
+	\item Drivers as kernel modules
+	\item Examples for buses other than PCI
+	\item Pretty much everything else...
+\end{itemize}
+
+However, once you finish this tutorial, you should be able to purse this knowledge yourself.
+
+\end{frame}
+
+\subsection{What is a driver anyway?}
+
+\begin{frame}
+\frametitle{What is a driver anyway?}
+
+\begin{itemize}
+	\item Interface between user space and hardware, implemented as a part of the kernel
+	\item The NetBSD drivers are written mostly in C
+	\item Sometimes they have machine dependent assembler parts, but this is a rare case
+
+\end{itemize}
+
+\end{frame}
+
+\subsection{What do you need to write a driver?}
+
+\begin{frame}
+\frametitle{What do you need to write a driver?}
+
+\begin{itemize}
+	\item C programming skills
+	\item Hardware documentation or ability to reverse engineer the hardware
+	\item Reference driver implementation will help but is not essential
+	\item The NetBSD installation and kernel source or cross-build environment (usually preferred for development of drivers)
+	\item Some\^{}H\^{}H\^{}H\^{}H A lot of time and coffee {\Large \smiley}
+\end{itemize}
+\end{frame}
+
+
+\section{The NetBSD driver model}
+
+\subsection{The NetBSD kernel basics}
+
+\begin{frame}
+\frametitle{The NetBSD kernel basics}
+\begin{itemize}
+	\item The NetBSD has a classic monolithic kernel - all drivers are running in the same address space
+	\item Thanks to above, communication between drivers and other kernel layers is simple
+	\item However, it also means that one badly written driver can affect the whole kernel
+	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf} etc.) 
+\end{itemize}
+\end{frame}
+
+\subsection{Tree shit}
+
+\begin{frame}
+\frametitle{Saving work with machine independent drivers}
+
+\begin{itemize}
+	\item If possible drivers should work on any platform
+	\item High quality, machine-independent (MI) drivers are an important factor that adds to the NetBSD portability
+	\item Some drivers are completely MI, some have MD or bus dependent attachments and some are completely MD
+	\begin{itemize}
+		\item Driver for a typical PCI card will be completely MI
+		\item Driver for a SoC components will usually be completely MD
+	\end{itemize}
+	\item The {\tt bus\_space} abstractions helps achieving portability, transparently handling endianness issues and hiding bus implementation details from the device driver
+	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port the NetBSD to a new hardware platform
+\end{itemize}
+\end{frame}
+
+\subsection{Kernel auto-configuration framework}
+
+\subsection{Skeleton of the driver}
+
+\section{Example driver from scratch}
+
+\subsection{Development environment}
+
+\begin{frame}
+\frametitle{Development environment}
+\begin{itemize}
+	\item Out of scope of this course, but very well documented
+	\item Cross compiling is an easy task with the {\tt build.sh} script
+	\item Described in Part V of the NetBSD Guide
+	\item Check out the NetBSD sources
+	\item {\tt \$ build.sh -m cobalt tools} will build compiler, assembler, linker, etc. for cobalt port
+	\item {\tt \$ build.sh -m cobalt kernel=GENERIC} will build GENERIC kernel for cobalt
+	\item Pass {\tt -u} parameter to {\tt build.sh} to update (it won't rebuilding everything)
+\end{itemize}
+\end{frame}
+
+\subsection{Quick introduction to {\tt GXemul}}
+
+\begin{frame}
+\frametitle{Quick introduction to {\tt GXemul}}
+\begin{itemize}
+	\item A framework for full-system computer architecture emulation, excellent for educational purposes
+	\item Capable of emulating several real machines supported by the NetBSD
+	\item We'll emulate Cobalt, a MIPS-based micro server with PCI bus
+	\item I've modified {\tt GXemul} and implemented an emulation of additional PCI device
+	\item It will be used to show a real-life (almost) example of driver development
+\end{itemize}
+\end{frame}
+
+\subsection{Our hardware - a fake PCI card}
+
+\begin{frame}
+\frametitle{Our hardware - a fake PCI card}
+\begin{itemize}
+	\item Business applications often use arithmetic operations like addition
+	\item FakeCards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
+	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for the NetBSD!
+
+	\item Implemented as a PCI board 
+\end{itemize}
+\end{frame}
+
+\subsection{Adding a new driver to the NetBSD kernel}
+
+\subsection{Matching the PCI device}
+
+\begin{frame}[fragile]
+\frametitle{Matching the PCI device}
+\begin{verbatim}
+unmatched vendor 0xfabc product 0x0001 (Co-processor 
+processor, revision 0x01) at pci0 dev 12 function 0 
+not configured
+\end{verbatim}
+
+\begin{itemize}
+	\item Kernel does not know anything about this vendor and device
+	\item Add it to PCI device database
+\end{itemize}
+\end{frame}
+
+
+\subsection{Attaching to the PCI device}
+
+\begin{frame}
+\frametitle{Attaching to the PCI device}
+\begin{itemize}
+	\item Our driver successfully attached but still is doing nothing useful, time to change that.
+\end{itemize}
+\end{frame}
+
+\subsection{Variable types used with {\tt bus\_space}}
+
+\begin{frame}
+\frametitle{Variable types used with {\tt bus\_space}}
+
+\begin{itemize}
+         \item {\tt bus\_space\_tag\_t} -- type used to describe a particular bus, usually passed to driver from MI bus structures
+         \item {\tt bus\_space\_handle\_t} --  used to describe a mapped range of bus space, usually created with {\tt bus\_space\_map()} function
+         \item {\tt bus\_addr\_t} -- address on the bus
+         \item {\tt bus\_size\_t} -- an amount of space on the bus
+         \item Contents of these types are MD, so avoid modifying from within driver\footnote{although you'll often have to use {\tt bus\_size\_t}}
+\end{itemize}
+\end{frame}
+
+
+\subsection{Mapping the hardware resources}
+
+\begin{frame}[fragile]
+\frametitle{Mapping the hardware resources}
+
+\begin{verbatim}
+bus_space_map(bus_space_tag_t space, bus_addr_t address, 
+bus_size_t size, int flags, bus_space_handle_t  *handlep);
+\end{verbatim}
+
+\begin{itemize}
+	\item The {\tt bus\_space\_map} creates mapping from physical address to virtual kernel address
+         \item {\tt space} -- represents bus on which the mapping will be created
+         \item {\tt address} -- typically represents physical address for which mapping will be created
+	\item {\tt size} -- describes amount of bus space to be mapped
+	\item {\tt handlep} -- pointer to mapped space (after successful mapping)
+         \item Separate space and address
+\end{itemize}
+\end{frame}
+
+
+
+
+\subsection{Accessing the hardware registers}
+\subsection{Testing}
+
+\section{Interacting with the user space}
+\subsection{Device files}
+\subsection{Utilising ioctls}
+\subsection{Example user space program}
+
+
+
+\section{A few tips}
+
+\subsection{Avoiding common pitfalls}
+
+\begin{frame}
+\frametitle{Avoiding common pitfalls}
+
+\begin{itemize}
+	\item Always free resources allocated in {\tt match} or {\tt probe} function
+	\item Always use {\tt bus\_space} methods, don't access the hardware using pointer dereference!
+	\item If possible test on more than one hardware architecture, some bugs may surface
+\end{itemize}
+\end{frame}
+
+\subsection{Basic driver debugging}
+
+\begin{frame}
+\frametitle{Basic driver debugging} 
+\begin{itemize}
+	\item Use {\tt aprint\_debug} to print debug-level messages on console and log them (enabled by passing {\tt AB\_DEBUG} from boot loader)
+	\item Use built-in DDB debugger
+	\begin{itemize}
+			\item Enabled by kernel option {\tt DDB}
+			\item Kernel panic will start DDB if {\tt DDB\_ONPANIC=1} kernel option is specified or {\tt ddb.onpanic} sysctl is set to 1.
+			\item {\tt \# sysctl -w kern.panic\_now=1} to trigger panic manually ({\tt DIAGNOSTIC} option)
+	\end{itemize}	
+	\item Remote debugging is possible on some ports
+	\begin{itemize}
+			\item With KGDB through serial port
+			\item With IPKDB through network
+	\end{itemize}	
+\end{itemize}
+\end{frame}
+
+
+\section{Summary}
+
+\begin{frame}
+\frametitle{Further reading}
+\begin{itemize}
+	\item Documentation, articles:
+	\begin{itemize}
+		\item A Machine-Independent DMA Framework for NetBSD, Jason R. Thorpe
+		\item Writing Drivers for NetBSD, Jochen Kunz
+		\item NetBSD Documentation: Writing a pseudo device
+		\item driver(9), bus\_space(9), bus\_dma(9), pci(9) {\tt man} pages, etc.
+	\end{itemize}
+	\item Source code of the drivers:
+	\begin{itemize}
+		\item {\tt tdvfb}, {\tt voodoofb} are fairly good examples with documentation publicly available.
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Questions}
+
+\begin{itemize}
+	\item Do you have any questions?
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{End\ldots}
+\vspace*{-0.8cm}
+\begin{center}
+\includegraphics[scale=0.5]{NetBSD.png}
+
+Thank you!
+\end{center}
+\end{frame}
+
+ 
+\end{document}
