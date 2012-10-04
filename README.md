@@ -18,8 +18,9 @@ Known problems
 ==============
 
 Some git installations are unable to verify github.com certificate. Add
--c http.sslVerify=false option GITHUB_OPTS variable at the beginning of
-setup.sh script.
+-c http.sslVerify=false option GIT_OPTS variable at the beginning of
+setup.sh script. Keep in mind that this potentially exposes you to a 
+man-in-the-middle attack.
 
 -- 
 Radoslaw Kujawa

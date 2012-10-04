@@ -11,7 +11,6 @@ LOG_GIT_CLONE=/tmp/setup-git-clone.log
 LOG_NETBSD_IMG=/tmp/setup-netbsd-cobalt-image.log
 LOG_NETBSD_SRC=/tmp/setup-netbsd-src.log
 
-
 GITHUB_URL=https://github.com
 GITHUB_ACCOUNT=rkujawa
 REPO_BUSSPACE_NAME=busspace-eurobsdcon2012
@@ -136,8 +135,8 @@ clone_repos() {
 
 	echo "== Cloning git repositories, logging to $LOG_GIT_CLONE"
 
-git clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_BUSSPACE_NAME.git > $LOG_GIT_CLONE 2>&1
-git clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_GXEMUL_NAME.git >> $LOG_GIT_CLONE 2>&1
+git $GIT_OPTS clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_BUSSPACE_NAME.git > $LOG_GIT_CLONE 2>&1
+git $GIT_OPTS clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_GXEMUL_NAME.git >> $LOG_GIT_CLONE 2>&1
 
 if [ $? -eq 0 ] ; then
 	echo "-- Repositories cloned successfuly"
