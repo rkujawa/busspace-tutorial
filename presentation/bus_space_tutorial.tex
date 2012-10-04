@@ -158,7 +158,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 \frametitle{Saving work with machine independent drivers}
 
 \begin{itemize}
-	\item If possible drivers should work on any platform
+	\item If possible drivers should work on any hardware platform
 	\item High quality, machine-independent (MI) drivers are an important factor that adds to the NetBSD portability
 	\item Some drivers are completely MI, some have MD or bus dependent attachments and some are completely MD
 	\begin{itemize}
@@ -166,7 +166,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 		\item Driver for a SoC components will usually be completely MD
 	\end{itemize}
 	\item The {\tt bus\_space} abstractions helps achieving portability, transparently handling endianness issues and hiding bus implementation details from the device driver
-	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port the NetBSD to a new hardware platform
+	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port the NetBSD to a new hardware
 \end{itemize}
 \end{frame}
 
@@ -200,20 +200,26 @@ However, once you finish this tutorial, you should be able to purse this knowled
 	\item Capable of emulating several real machines supported by the NetBSD
 	\item We'll emulate Cobalt, a MIPS-based micro server with PCI bus
 	\item I've modified {\tt GXemul} and implemented an emulation of additional PCI device
-	\item It will be used to show a real-life (almost) example of driver development
+	\item It will be used to show (almost) a real-life example of driver development
 \end{itemize}
 \end{frame}
 
 \subsection{Our hardware - a fake PCI card}
 
 \begin{frame}
-\frametitle{Our hardware - a fake PCI card}
+\frametitle{Our hardware - functional description}
 \begin{itemize}
 	\item Business applications often use arithmetic operations like addition
 	\item FakeCards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
 	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for the NetBSD!
+\end{itemize}
+\end{frame}
 
-	\item Implemented as a PCI board 
+\begin{frame}
+\frametitle{Our hardware - technical details}
+\begin{itemize}
+	\item Implemented as a PCI card
+	\item Has just two registers in PCI memory space
 \end{itemize}
 \end{frame}
 
@@ -222,7 +228,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 \subsection{Matching the PCI device}
 
 \begin{frame}[fragile]
-\frametitle{Matching the PCI device}
+\frametitle{Modifying the PCI device database}
 \begin{verbatim}
 unmatched vendor 0xfabc product 0x0001 (Co-processor 
 processor, revision 0x01) at pci0 dev 12 function 0 
@@ -231,10 +237,34 @@ not configured
 
 \begin{itemize}
 	\item Kernel does not know anything about this vendor and device
-	\item Add it to PCI device database
+	\item Add it to PCI device database - {\tt src/sys/dev/pci/pcidevs}
+	\item {\tt vendor VENDORNAME 0xVENDORID Long Vendor Name}
+	\item {\tt product VENDORNAME PRODUCTNAME 0xPRODUCTID	Long Product Name}
+	\item To regenerate pcidevs*.h run {\tt make -f src/sys/dev/pci/Makefile.pcidevs}
 \end{itemize}
 \end{frame}
 
+\begin{frame}
+\frametitle{Adding the new driver}
+\begin{itemize}
+	\item Choose a name - ...
+	\item Create a set of new files
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Matching the PCI device}
+\begin{itemize}
+	\item foo\_match
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Attaching to the PCI device}
+\begin{itemize}
+	\item Our driver successfully attached but still is doing nothing useful, time to change that.
+\end{itemize}
+\end{frame}
 
 \subsection{Attaching to the PCI device}
 
