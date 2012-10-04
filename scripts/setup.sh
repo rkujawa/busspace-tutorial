@@ -34,7 +34,7 @@ fi
 
 tar -jxf $NETBSD_SRC_FILE
 
-if [ -d "NETBSD_SRC_DIR" ] ; then
+if [ -d "$NETBSD_SRC_DIR" ] ; then
 	echo "-- Source extracted successfully"
 else
 	echo "-- Problem extracting the NetBSD source"
@@ -89,8 +89,8 @@ clone_repos() {
 
 	echo "== Cloning git repositories, logging to $LOG_GIT_CLONE"
 
-git clone $GITHUB_ACCOUNT_URL/$REPO_BUSSPACE_NAME.git > $LOG_GIT_CLONE 2>&1
-git clone $GITHUB_ACCOUNT_URL/$REPO_GXEMUL_NAME.git >> $LOG_GIT_CLONE 2>&1
+git clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_BUSSPACE_NAME.git > $LOG_GIT_CLONE 2>&1
+git clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_GXEMUL_NAME.git >> $LOG_GIT_CLONE 2>&1
 
 if [ "$?" == 0 ] ; then
 	echo "-- Repositories cloned successfuly"
@@ -146,10 +146,10 @@ fi
 
 create_workdir
 
-#clone_repos
-#fetch_netbsdimg
-#fetch_netbsdsrc
-#build_gxemul
+clone_repos
+fetch_netbsdimg
+fetch_netbsdsrc
+build_gxemul
 
 exit 0
 
