@@ -2,11 +2,15 @@
 # This script was tested only on the NetBSD/amd64 6.0 and MacOS X 10.8.2.
 
 DOWNLOAD_TOOL=wget	# wget, curl, etc.
-DOWNLOAD_TOOL_FLAGS="--no-check-certificate" # doh
+DOWNLOAD_TOOL_FLAGS="--no-check-certificate" # my wget doesn't like github cert
+GIT_OPTS=""
+#GIT_OPTS="-c http.sslVerify=false"
 
-LOG_GXEMUL=/tmp/build-gxemul.log
-LOG_GIT_CLONE=/tmp/build-git-clone.log
-LOG_NETBSD_IMG=/tmp/fetch-netbsd-cobalt-image.log
+LOG_GXEMUL=/tmp/setup-gxemul.log
+LOG_GIT_CLONE=/tmp/setup-git-clone.log
+LOG_NETBSD_IMG=/tmp/setup-netbsd-cobalt-image.log
+LOG_NETBSD_SRC=/tmp/setup-netbsd-src.log
+
 
 GITHUB_URL=https://github.com
 GITHUB_ACCOUNT=rkujawa
@@ -16,14 +20,45 @@ NETBSD_SRC_FILE=netbsd-20121002.tar.bz2
 NETBSD_SRC_DIR=src-clean
 NETBSD_COBALT_IMG_FILE=netbsd-cobalt.img.bz2
 
+WORK_DIR=$1
+ENVTMPFILE=`mktemp -t environment.conf.XXXXXX`
+ENVSAVETO=$WORK_DIR/$REPO_BUSSPACE_NAME/scripts/environment.conf
+
+prerequisites () {
+
+which git > /dev/null 2>&1
+
+echo "== Checking prerequisites"
+
+if [ "$?" != 0 ] ; then
+	echo "-- Please install git first!"
+	exit 1
+fi
+
+which $DOWNLOAD_TOOL > /dev/null 2>&1
+
+if [ "$?" != 0 ] ; then
+	echo "-- Install wget or change DOWNLOAD_TOOL and DOWNLOAD_TOOL_FLAGS variables in this script!" 
+	exit 1
+fi
+
+which gcc > /dev/null 2>&1
+
+if [ "$?" != 0 ] ; then
+	echo "-- Please install development environment, gcc was not found!"
+	exit 1
+fi
+
+}
+
 fetch_netbsdsrc() {
 
 NETBSD_SRC_URL=$GITHUB_URL/downloads/$GITHUB_ACCOUNT/$REPO_BUSSPACE_NAME/$NETBSD_SRC_FILE
 
-echo "== Fetching the NetBSD source"
+echo "== Fetching the NetBSD source, logging to $LOG_NETBSD_SRC"
 cd $WORK_DIR
 
-$DOWNLOAD_TOOL $DOWNLOAD_TOOL_FLAGS $NETBSD_SRC_URL 
+$DOWNLOAD_TOOL $DOWNLOAD_TOOL_FLAGS $NETBSD_SRC_URL > $LOG_NETBSD_SRC 2>&1
 
 if [ -f "$NETBSD_SRC_FILE" ] ; then
 	echo "-- Successfuly downloaded the archive, extracting..."
@@ -32,7 +67,7 @@ else
 	exit 1
 fi
 
-tar -jxf $NETBSD_SRC_FILE
+tar -jxf $NETBSD_SRC_FILE >> $LOG_NETBSD_SRC 2>&1
 
 if [ -d "$NETBSD_SRC_DIR" ] ; then
 	echo "-- Source extracted successfully"
@@ -40,6 +75,13 @@ else
 	echo "-- Problem extracting the NetBSD source"
 	exit 1
 fi
+
+mv $NETBSD_SRC_DIR src
+
+rm $NETBSD_SRC_FILE
+
+echo "NETBSD_SRC_DIR=$WORK_DIR/src" >> $ENVTMPFILE
+echo 'NETBSD_KERNEL=$NETBSD_SRC_DIR/sys/arch/cobalt/compile/obj/GENERIC/netbsd' >> $ENVTMPFILE
 
 }
 
@@ -59,14 +101,19 @@ else
 	exit 1
 fi
 
-bzip2 -d $NETBSD_COBALT_IMG_FILE
+bzip2 -d $NETBSD_COBALT_IMG_FILE >> $LOG_NETBSD_SRC 2>&1
 
-if [ -f "`echo $NETBSD_COBALT_IMG_FILE | sed s/\.bz2//`" ] ; then
+NETBSD_COBALT_UNCOMPRESSED_IMG_FILE=`echo $NETBSD_COBALT_IMG_FILE | sed s/\.bz2//`
+
+if [ -f "$NETBSD_COBALT_UNCOMPRESSED_IMG_FILE" ] ; then
 	echo "-- Image uncompressed successfully"
 else
 	echo "-- Problem uncompressing the image"
 	exit 1
 fi
+
+echo "NETBSD_FS_IMG=$WORK_DIR/$NETBSD_COBALT_UNCOMPRESSED_IMG_FILE" >> $ENVTMPFILE
+
 }
 
 create_workdir() {
@@ -76,7 +123,7 @@ echo "== Creating work directory $WORK_DIR"
 mkdir -p $WORK_DIR
 cd $WORK_DIR
 
-if [ "$?" == 0 ] ; then
+if [ $? -eq 0 ] ; then
 	echo "-- Work directory ready"
 else
 	echo "-- Can't cd into $WORK_DIR - please investigate the problem."
@@ -92,7 +139,7 @@ clone_repos() {
 git clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_BUSSPACE_NAME.git > $LOG_GIT_CLONE 2>&1
 git clone $GITHUB_URL/$GITHUB_ACCOUNT/$REPO_GXEMUL_NAME.git >> $LOG_GIT_CLONE 2>&1
 
-if [ "$?" == 0 ] ; then
+if [ $? -eq 0 ] ; then
 	echo "-- Repositories cloned successfuly"
 else
 	echo "-- Can't clone the git repository - see $LOG_GIT_CLONE"
@@ -122,6 +169,8 @@ else
 	exit 1
 fi
 
+echo "GXEMUL_BINARY=$WORK_DIR/$REPO_GXEMUL_NAME/gxemul-current/gxemul" >> $ENVTMPFILE
+
 }
 
 
@@ -131,25 +180,29 @@ if [ -z "$1" ] ; then
 	echo "work directory (it will be created if it does not exist). To start again" 
 	echo "just delete the directory."
 	echo ""
-	echo "usage:\t$0 path"
+	echo "usage: $0 path"
 	exit 1
 fi 
 
-WORK_DIR=$1
+echo "# work dir $1" >> $ENVTMPFILE
 
-git > /dev/null 2>&1
 
-if [ "$?" == 127 ] ; then
-	echo "-- Please install git first!"
-	exit 1
-fi
-
+prerequisites
 create_workdir
-
 clone_repos
 fetch_netbsdimg
 fetch_netbsdsrc
 build_gxemul
+
+cp $ENVTMPFILE $ENVSAVETO
+if [ $? -eq 0 ] ; then
+	echo "-- Environment settings saved to $ENVSAVETO"
+else
+	echo "-- Problem saving environment settings to $ENVSAVETO"
+fi
+
+
+rm $ENVTMPFILE
 
 exit 0
 
