@@ -5,7 +5,9 @@
 
 . `dirname $0`/environment.conf
 
-$GXEMUL_BINARY -x -E cobalt -d $NETBSD_FS_IMG $NETBSD_KERNEL 
-
-#$GXEMUL_BINARY -x -E cobalt $NETBSD_KERNEL 
+if [ "$1" == "-n" ] ; then
+	$GXEMUL_BINARY -x -E cobalt $NETBSD_KERNEL 
+else
+	$GXEMUL_BINARY -x -E cobalt -d $NETBSD_FS_IMG $NETBSD_KERNEL 
+fi
 
