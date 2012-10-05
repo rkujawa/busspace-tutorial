@@ -210,7 +210,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 \frametitle{Our hardware - functional description}
 \begin{itemize}
 	\item Business applications often use arithmetic operations like addition
-	\item FakeCards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
+	\item Fake Cards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
 	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for the NetBSD!
 \end{itemize}
 \end{frame}
@@ -234,46 +234,166 @@ unmatched vendor 0xfabc product 0x0001 (Co-processor
 processor, revision 0x01) at pci0 dev 12 function 0 
 not configured
 \end{verbatim}
-
 \begin{itemize}
 	\item Kernel does not know anything about this vendor and device
 	\item Add it to PCI device database - {\tt src/sys/dev/pci/pcidevs}
 	\item {\tt vendor VENDORNAME 0xVENDORID Long Vendor Name}
 	\item {\tt product VENDORNAME PRODUCTNAME 0xPRODUCTID	Long Product Name}
-	\item To regenerate pcidevs*.h run {\tt make -f src/sys/dev/pci/Makefile.pcidevs}
+	\item To regenerate pcidevs*.h run {\tt awk -f devlist2h.awk pcidevs} or
+{\tt Makefile.pcidevs} if you're on the NetBSD
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Adding the new driver}
+\begin{frame}[fragile]
+\frametitle{Modifying the PCI device database - example}
+\scriptsize
+\begin{verbatim}
+--- pcidevs	29 Sep 2012 10:26:14 -0000	1.1139
++++ pcidevs	5 Oct 2012 08:52:59 -0000
+@@ -669,6 +669,7 @@
+ vendor CHRYSALIS	0xcafe	Chrysalis-ITS
+ vendor MIDDLE_DIGITAL	0xdeaf	Middle Digital
+ vendor ARC		0xedd8	ARC Logic
++vendor FAKECARDS	0xfabc	Fake Cards
+ vendor INVALID		0xffff	INVALID VENDOR ID
+ 
+ /*
+@@ -2120,6 +2121,9 @@
+ /* Eumitcom products */
+ product EUMITCOM WL11000P	0x1100	WL11000P PCI WaveLAN/IEEE 802.11
+ 
++/* FakeCards products */
++product FAKECARDS AAA		0x0001	Advanced Addition Accelerator
++
+ /* O2 Micro */
+ product O2MICRO 00F7		0x00f7	Integrated OHCI IEEE 1394 Host Controller
+ product O2MICRO OZ6729		0x6729	OZ6729 PCI-PCMCIA Bridge
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Modifying the PCI device database - example}
+\begin{verbatim}
+Fake Cards Advanced Addition Accelerator (Co-processor 
+processor, revision 0x01) at pci0 dev 12 function 0 
+not configured
+\end{verbatim}
 \begin{itemize}
-	\item Choose a name - ...
-	\item Create a set of new files
+	\item Now the kernel knows the vendor and product ID
+	\item But there's still no driver for this device
 \end{itemize}
 \end{frame}
 
 \begin{frame}
+\frametitle{Adding the new PCI driver}
+\begin{itemize}
+	\item Choose a name - short, easy to remember, avoid numbers
+	\begin{itemize}
+		\item {\tt faa} looks like a good name
+	\end{itemize}
+	\item Create a set of new files in {\tt src/sys/dev/pci}
+	\begin{itemize}
+		\item {\tt faa.c} - main driver code
+		\item {\tt faareg.h} - register definitions 
+		\item {\tt faavar.h} - structures used by the driver
+	\end{itemize}
+	\item Modify driver definitions
+	\begin{itemize}
+		\item {\tt src/sys/dev/pci/files.pci}
+		\item {\tt src/sys/dev/DEVNAMES}
+	\end{itemize}
+	\item Add the driver to kernel configuration file - {\tt src/sys/arch/\$PORTNAME/conf/GENERIC}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Adding the new PCI driver - main driver}
+\begin{itemize}
+	\item Typical kernel includes at the beginning, followed by machine-specific and bus-specific includes
+	\item Should include {\tt namereg.h} and {\tt namevar.h} files
+	\item {\tt CF
+	\item Two functions...
+	\item {\tt name\_match}
+	\item {\tt name\_attach}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Adding the new PCI driver - main driver example}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
+\begin{verbatim}
+#include <sys/cdefs.h>
+__KERNEL_RCSID(0, "$NetBSD$");
+#include <sys/param.h>
+#include <sys/device.h>
+#include <dev/pci/pcivar.h>
+#include <dev/pci/pcidevs.h>
+#include <dev/pci/faareg.h>
+#include <dev/pci/faavar.h>
+static int      faa_match(device_t, cfdata_t, void *);
+static void     faa_attach(device_t, device_t, void *);
+
+CFATTACH_DECL_NEW(faa, sizeof(struct faa_softc),
+    faa_match, faa_attach, NULL, NULL);
+
+static int
+faa_match(device_t parent, cfdata_t match, void *aux)
+{
+        return 0;
+}
+static void
+faa_attach(device_t parent, device_t self, void *aux)
+{ }
+\end{verbatim}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Adding the new PCI driver - example}
+\begin{itemize}
+	\item The driver should compile now
+	\item But it still won't "find" the device
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
 \frametitle{Matching the PCI device}
 \begin{itemize}
-	\item foo\_match
+	\item Modify the {\tt faa\_match} function to match the specified PCI device
+	\item Use {\tt PCI\_VENDOR} and {\tt PCI\_PRODUCT} macros to obtain the IDs
 \end{itemize}
-\end{frame}
+\scriptsize
+\begin{verbatim}
+static int
+faa_match(device_t parent, cfdata_t match, void *aux)
+{
+        const struct pci_attach_args *pa = (const struct pci_attach_args *)aux;
 
-\begin{frame}
-\frametitle{Attaching to the PCI device}
-\begin{itemize}
-	\item Our driver successfully attached but still is doing nothing useful, time to change that.
-\end{itemize}
+        if ((PCI_VENDOR(pa->pa_id) == PCI_VENDOR_FAKECARDS) &&
+            (PCI_PRODUCT(pa->pa_id) == PCI_PRODUCT_FAKECARDS_AAA))
+                return 1;
+
+        return 0;
+}
+\end{verbatim}
 \end{frame}
 
 \subsection{Attaching to the PCI device}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Attaching to the PCI device}
+\begin{verbatim}
+faa0 at pci0 dev 12 function 0
+\end{verbatim}
 \begin{itemize}
-	\item Our driver successfully attached but still is doing nothing useful, time to change that.
+	\item The driver has successfully matched PCI device but still is doing nothing useful, time to change that
 \end{itemize}
 \end{frame}
+
 
 \subsection{Variable types used with {\tt bus\_space}}
 

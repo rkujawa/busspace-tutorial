@@ -2,6 +2,7 @@
 #
 # This script rebuilds the NetBSD/cobalt kernel (and tools if necessary).
 #
+FLAGS=""
 
 . `dirname $0`/environment.conf
 
@@ -18,5 +19,8 @@ if [ ! -d "$TOOLDIR_NAME" ] ; then
 	./build.sh -U -m cobalt tools
 fi 
 
-./build.sh -U -u -m cobalt kernel=GENERIC
+if [ "$1" == "-u" ] ; then
+	FLAGS="$FLAGS -u"
+fi
 
+./build.sh $FLAGS -U -m cobalt kernel=GENERIC

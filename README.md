@@ -13,6 +13,11 @@ Download and run the scripts/setup.sh script. It will automagically fetch the
 git repositories, build the GXemul, the NetBSD tools and kernel. This script 
 was tested only on the NetBSD 6 and MacOS X 10.8.2, YMMV.
 
+Manual installation
+===================
+
+If you don't want to use the script, or the script does not work for you
+materials can be installed manually:
 
 Known problems
 ==============

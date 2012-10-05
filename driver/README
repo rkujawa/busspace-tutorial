@@ -1,0 +1,6 @@
+This directory contains source of the example driver.
+
+It can be integrated into the NetBSD source as of 2012-10-02, if you have used
+setup.sh script to download the source, now you can use integrate-driver.sh
+to add it, then run netbsd-kernel-rebuild.sh.
+
