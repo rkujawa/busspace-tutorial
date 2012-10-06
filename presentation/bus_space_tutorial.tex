@@ -7,6 +7,7 @@
 \usepackage{ucs}
 \usepackage[utf8x]{inputenc}
 \usepackage{wasysym}
+\usepackage[normalem]{ulem}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{caption}[numbered]
@@ -93,7 +94,7 @@
 \begin{frame}
 \frametitle{What won't be covered here?}
 
-We don't have much time, so several advanced topics were omitted:
+We don't have much time, so several \sout{advanced} topics were omitted:
 
 \begin{itemize}
 	\item Interrupt handling
@@ -113,49 +114,114 @@ However, once you finish this tutorial, you should be able to purse this knowled
 
 \begin{frame}
 \frametitle{What is a driver anyway?}
-
 \begin{itemize}
 	\item Interface between user space and hardware, implemented as a part of the kernel
 	\item The NetBSD drivers are written mostly in C
 	\item Sometimes they have machine dependent assembler parts, but this is a rare case
-
 \end{itemize}
-
 \end{frame}
 
 \subsection{What do you need to write a driver?}
 
 \begin{frame}
 \frametitle{What do you need to write a driver?}
-
 \begin{itemize}
 	\item C programming skills
 	\item Hardware documentation or ability to reverse engineer the hardware
 	\item Reference driver implementation will help but is not essential
-	\item The NetBSD installation and kernel source or cross-build environment (usually preferred for development of drivers)
-	\item Some\^{}H\^{}H\^{}H\^{}H A lot of time and coffee {\Large \smiley}
+	\item The NetBSD installation and kernel source or cross-build environment (the latter is usually preferred for development of drivers)
+	\item A lot of time, coffee and patience {\Large \smiley}
 \end{itemize}
 \end{frame}
 
-
 \section{The NetBSD driver model}
-
 \subsection{The NetBSD kernel basics}
 
 \begin{frame}
 \frametitle{The NetBSD kernel basics}
 \begin{itemize}
-	\item The NetBSD has a classic monolithic kernel - all drivers are running in the same address space
+	\item The NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
 	\item Thanks to above, communication between drivers and other kernel layers is simple
 	\item However, it also means that one badly written driver can affect the whole kernel
 	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf} etc.) 
 \end{itemize}
 \end{frame}
 
-\subsection{Tree shit}
+\begin{frame}
+\frametitle{The NetBSD source directory structure}
+\begin{itemize}
+	\item We'll only cover parts interesting for a device driver programmer
+	\item {\tt src/sys/} - kernel source directory
+	\item {\tt src/sys/dev/} - machine-independent device drivers
+	\item {\tt src/sys/arch/} - port-specific or architecture-specific parts (like low-level system initialisation procedures or machine-dependent drivers)
+	\item {\tt src/sys/arch/\$PORTNAME/conf/} - kernel configuration files for a given port
+
+\end{itemize}
+\end{frame}
+
+\subsection{Kernel autoconfiguration framework}
 
 \begin{frame}
-\frametitle{Saving work with machine independent drivers}
+\frametitle{Kernel autoconfiguration framework - autoconf(9)}
+\begin{itemize}
+	\item Autoconfiguration is the process of matching hardware devices with an
+     appropriate device driver
+    \item Kernel message buffer (dmesg) contains information about autoconfiguration of devices
+    \item {\tt driver0 at bus0: Foo hardware} 
+    \begin{itemize}
+    	\item Instance 0 of the driver has attached to instance 0 of particular bus
+		\item Such message often carries additional bus-specific information about exact location of the device (like device and function number on the PCI bus)
+	\end{itemize}
+    \item {\tt driver0: some message}
+    \begin{itemize}
+    	\item Additional information about the driver state or device configuration
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Autoconfiguration as seen in dmesg}
+\tiny
+\begin{verbatim}
+NetBSD 6.99.12 (GENERIC) #7: Fri Oct  5 18:43:21 CEST 2012
+        rkujawa@saiko.local:/Users/rkujawa/netbsd-eurobsdcon2012/src/sys/arch/cobalt/compile/obj/GENERIC
+Cobalt Qube 2
+total memory = 32768 KB
+avail memory = 27380 KB
+mainbus0 (root)
+com0 at mainbus0 addr 0x1c800000 level 3: ns16550a, working fifo
+com0: console
+cpu0 at mainbus0: QED RM5200 CPU (0x28a0) Rev. 10.0 with built-in FPU Rev. 1.0
+cpu0: 48 TLB entries, 256MB max page size
+cpu0: 32KB/32B 2-way set-associative L1 instruction cache
+cpu0: 32KB/32B 2-way set-associative write-back L1 data cache
+mcclock0 at mainbus0 addr 0x10000070: mc146818 compatible time-of-day clock
+panel0 at mainbus0 addr 0x1f000000
+gt0 at mainbus0 addr 0x14000000
+pci0 at gt0
+pchb0 at pci0 dev 0 function 0: Galileo GT-64011 System Controller, rev 1
+pcib0 at pci0 dev 9 function 0
+pcib0: VIA Technologies VT82C586 PCI-ISA Bridge, rev 57
+viaide0 at pci0 dev 9 function 1
+viaide0: VIA Technologies VT82C586 (Apollo VP) ATA33 controller
+viaide0: primary channel interrupting at irq 14
+atabus0 at viaide0 channel 0
+viaide0: secondary channel interrupting at irq 15
+atabus1 at viaide0 channel 1
+wd0 at atabus0 drive 0
+wd0: <netbsd-cobalt.img>
+wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{verbatim}
+\end{frame}
+
+\begin{frame}
+\frametitle{Autoconfiguration as seen in dmesg}
+\begin{center}
+\includegraphics[scale=0.4]{img_cobaltdevices.png}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Machine independent drivers}
 
 \begin{itemize}
 	\item If possible drivers should work on any hardware platform
@@ -170,9 +236,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 \end{itemize}
 \end{frame}
 
-\subsection{Kernel auto-configuration framework}
-
-\subsection{Skeleton of the driver}
+%\subsection{Skeleton of the driver}
 
 \section{Example driver from scratch}
 
@@ -183,7 +247,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 \begin{itemize}
 	\item Out of scope of this course, but very well documented
 	\item Cross compiling is an easy task with the {\tt build.sh} script
-	\item Described in Part V of the NetBSD Guide
+	\item Described in \href{http://www.netbsd.org/docs/guide/en/part-compile.html}{Part V of the NetBSD Guide}
 	\item Check out the NetBSD sources
 	\item {\tt \$ build.sh -m cobalt tools} will build compiler, assembler, linker, etc. for cobalt port
 	\item {\tt \$ build.sh -m cobalt kernel=GENERIC} will build GENERIC kernel for cobalt
@@ -198,7 +262,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 \begin{itemize}
 	\item A framework for full-system computer architecture emulation, excellent for educational purposes
 	\item Capable of emulating several real machines supported by the NetBSD
-	\item We'll emulate Cobalt, a MIPS-based micro server with PCI bus
+	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus
 	\item I've modified {\tt GXemul} and implemented an emulation of additional PCI device
 	\item It will be used to show (almost) a real-life example of driver development
 \end{itemize}
@@ -294,8 +358,8 @@ not configured
 	\item Create a set of new files in {\tt src/sys/dev/pci}
 	\begin{itemize}
 		\item {\tt faa.c} - main driver code
-		\item {\tt faareg.h} - register definitions 
-		\item {\tt faavar.h} - structures used by the driver
+		\item {\tt faareg.h} - register definitions\footnote{Might not exist if the driver is only a simple passthrough from specific bus to other MI driver.}
+		\item {\tt faavar.h} - driver structures and functions used in other parts of the kernel\footnote{Omitted if not needed.}
 	\end{itemize}
 	\item Modify driver definitions
 	\begin{itemize}
@@ -309,14 +373,58 @@ not configured
 \begin{frame}
 \frametitle{Adding the new PCI driver - main driver}
 \begin{itemize}
-	\item Typical kernel includes at the beginning, followed by machine-specific and bus-specific includes
-	\item Should include {\tt namereg.h} and {\tt namevar.h} files
-	\item {\tt CF
-	\item Two functions...
-	\item {\tt name\_match}
-	\item {\tt name\_attach}
+	\item Kernel includes are at the beginning, followed by machine-specific and bus-specific includes
+	\item Should also include {\tt faareg.h} and {\tt faavar.h} files
+	\item Minimal driver needs just two functions
+	\begin{itemize}
+		\item {\tt faa\_match} (or {\tt faa\_probe} for some buses)
+		\item {\tt faa\_attach}
+	\end{itemize}
+	\item {\tt CFATTACH\_DECL\_NEW} macro plugs above functions into autoconf(9) mechanism
 \end{itemize}
 \end{frame}
+
+\begin{frame}
+\frametitle{Adding the new PCI driver - main driver}
+\begin{itemize}
+	\item {\tt static int faa\_match(device\_t parent, cfdata\_t match, void *aux);}	
+	\begin{itemize}
+		\item Check if the driver should attach to a given device (for example in case of PCI bus, it will be used to check vendor and product ID)
+		\item {\tt parent} - pointer to parent's driver device structure
+		\item {\tt match} - pointer to structure describing how... TODO
+		\item {\tt aux} - despite the name most important argument...
+	\end{itemize}
+	\item {\tt static void faa\_attach(device\_t parent, device\_t self, void *aux);}
+	\begin{itemize}
+		\item Attach the driver to a given device
+		\item {\tt parent} - same as with match function
+		\item {\tt self} - pointer to driver's device structure
+		\item {\tt aux} - same as with match function
+	\end{itemize}
+
+	\item See definitions of these functions in the \href{http://netbsd.gw.com/cgi-bin/man-cgi?driver+9+NetBSD-current}{driver(9)} man page.
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Adding the new PCI driver - main driver cont'd}
+\begin{itemize}
+	\item {\tt CFATTACH\_DECL\_NEW(faa, sizeof(struct faa\_softc),    faa\_match, faa\_attach, NULL, NULL);}
+	\begin{itemize}
+		\item driver name
+		\item size of softc structure containing state of driver's instance
+		\item match/probe function
+		\item attach function
+		\item detach TODO
+		\item activate TODO
+	\end{itemize}
+	\item \_NEW name is not fortunate
+	\item This variant was introduced recently and isn't documented well
+\end{itemize}
+\end{frame}
+
+
+
 
 \begin{frame}[fragile]
 \frametitle{Adding the new PCI driver - main driver example}
@@ -350,13 +458,112 @@ faa_attach(device_t parent, device_t self, void *aux)
 \end{verbatim}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Adding the new PCI driver - auxiliary includes}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faareg.h}
+\end{itemize}
+\begin{verbatim}
+#ifndef FAAREG_H
+#define FAAREG_H
+/* 
+ * Registers are defined using preprocessor:
+ * #define FAA_REGNAME	0x0
+ * We'll add them later, let's leave it empty for now.
+ */
+#endif /* FAAREG_H */
+\end{verbatim}
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faavar.h}
+\end{itemize}
+\begin{verbatim}
+#ifndef FAAVAR_H
+#define FAAVAR_H
 
+struct faa_softc {
+        device_t sc_dev;
+		/* sc_dev is an absolute minimum, we'll add more later */
+};
+#endif /* FAAVAR_H */
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Adding the new PCI driver - registering the driver}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/files.pci}
+\end{itemize}
+\begin{verbatim}
+--- pci/files.pci	2 Aug 2012 00:17:44 -0000	1.360
++++ pci/files.pci	6 Oct 2012 19:59:10 -0000
+@@ -1122,3 +1122,9 @@
+ device	tdvfb: wsemuldisplaydev, rasops8, vcons, videomode
+ attach	tdvfb at pci
+ file	dev/pci/tdvfb.c		tdvfb	
++
++# FakeCards Advanced Addition Accelerator
++device	faa
++attach	faa at pci
++file	dev/pci/faa.c		faa	
++
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Adding the new PCI driver - registering the driver}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/DEVNAMES}
+\end{itemize}
+\begin{verbatim}
+--- DEVNAMES	1 Sep 2012 11:19:58 -0000	1.279
++++ DEVNAMES	6 Oct 2012 19:59:06 -0000
+@@ -436,6 +436,7 @@
+ ex			MI
+ exphy			MI
+ ezload			MI		Attribute
++faa			MI
+ fb			luna68k
+ fb			news68k
+ fb			newsmips
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Adding the new PCI driver to the kernel configuration}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/arch/cobalt/conf/GENERIC}
+\end{itemize}
+\begin{verbatim}
+--- GENERIC	10 Mar 2012 21:51:50 -0000	1.134
++++ GENERIC	6 Oct 2012 20:12:37 -0000
+@@ -302,6 +302,9 @@
+ #fms*		at pci? dev ? function ?	# Forte Media FM801
+ #sv*		at pci? dev ? function ?	# S3 SonicVibes
+ 
++# Fake Cards Advanced Addition Accelerator
++faa*		at pci? dev ? function ?
++
+ # Audio support
+ #audio*		at audiobus?
+\end{verbatim}
+\begin{itemize}
+	\item An instance of {\tt faa} may be attached to any PCI device, any function
+	\item Driver's match function will check if the driver is able to work with given device
+	\item Exact position of rule in the configuration file is not important in this case
+\end{itemize}
+\end{frame}
 
 \begin{frame}
 \frametitle{Adding the new PCI driver - example}
 \begin{itemize}
 	\item The driver should compile now
-	\item But it still won't "find" the device
+	\item But the kernel still won't "find" the device
 \end{itemize}
 \end{frame}
 
@@ -390,10 +597,10 @@ faa_match(device_t parent, cfdata_t match, void *aux)
 faa0 at pci0 dev 12 function 0
 \end{verbatim}
 \begin{itemize}
-	\item The driver has successfully matched PCI device but still is doing nothing useful, time to change that
+	\item The driver has successfully matched and attached to PCI device but still is doing nothing useful
+	\item Let's fill attach function and actually program the hardware
 \end{itemize}
 \end{frame}
-
 
 \subsection{Variable types used with {\tt bus\_space}}
 
@@ -412,8 +619,23 @@ faa0 at pci0 dev 12 function 0
 
 \subsection{Mapping the hardware resources}
 
+\begin{frame}
+\frametitle{Why do we need to "map" the resources?}
+\begin{itemize}
+	\item In a memory-protected environment like the NetBSD one cannot directly access the physical addresses
+	\item The kernel has its own virtual address space
+    \item Physical space can be made visible in kernel virtual address space through process of mapping
+    \item It's a machine-dependent process but it's also conveniently hidden from the programmer by bus\_space
+\end{itemize}
+\end{frame}
+
+
 \begin{frame}[fragile]
 \frametitle{Mapping the hardware resources}
+
+\begin{itemize}
+	\item Generic bus\_space(9) way to map space
+\end{itemize}
 
 \begin{verbatim}
 bus_space_map(bus_space_tag_t space, bus_addr_t address, 
@@ -421,27 +643,105 @@ bus_size_t size, int flags, bus_space_handle_t  *handlep);
 \end{verbatim}
 
 \begin{itemize}
-	\item The {\tt bus\_space\_map} creates mapping from physical address to virtual kernel address
-         \item {\tt space} -- represents bus on which the mapping will be created
-         \item {\tt address} -- typically represents physical address for which mapping will be created
+	\item The {\tt bus\_space\_map} creates mapping from physical address to kernel virtual address
+    \item {\tt space} -- represents bus on which the mapping will be created
+    \item {\tt address} -- typically represents physical address for which mapping will be created
 	\item {\tt size} -- describes amount of bus space to be mapped
 	\item {\tt handlep} -- pointer to mapped space (after successful mapping)
-         \item Separate space and address
+    \item Separate space and address
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Mapping the hardware resources}
+
+\begin{itemize}
+	\item PCI-specific way to map space
+\end{itemize}
+
+\begin{verbatim}
+pci_mapreg_map(const struct pci_attach_args *pa, int reg, 
+pcireg_t type, int busflags, bus_space_tag_t *tagp, 
+bus_space_handle_t *handlep, bus_addr_t *basep, 
+bus_size_t *sizep);
+\end{verbatim}
+
+\begin{itemize}
+	\item The {\tt pci\_mapreg\_map} creates mapping from physical address present in specified BAR register to kernel virtual address
+    \item {\tt pa} --
+    \item {\tt reg} -- 
+   	\item {\tt type} --
+	\item {\tt busflags} -- 
+	\item {\tt tagp} -- 
+	\item {\tt handlep} -- pointer to a mapped space
+	\item {\tt basep} -- 
+	\item {\tt sizep} -- 
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Mapping the registers using BAR - filling auxiliary includes}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faareg.h}
+\end{itemize}
+\begin{verbatim}
+#define FAA_MMREG_BAR   0x10
+\end{verbatim}
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faavar.h}
+\end{itemize}
+\begin{verbatim}
+struct faa_softc {
+        device_t sc_dev;
+
+        bus_space_tag_t sc_regt;
+        bus_space_handle_t sc_regh;
+        bus_addr_t sc_reg_pa;
+
+};
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Mapping the registers using BAR - main driver code}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
+\begin{verbatim}
+static void
+faa_attach(device_t parent, device_t self, void *aux)
+{
+        struct faa_softc *sc = device_private(self);
+        const struct pci_attach_args *pa = aux;
+
+        sc->sc_dev = self;
+
+        pci_aprint_devinfo(pa, NULL);
+
+        if (pci_mapreg_map(pa, FAA_MMREG_BAR, PCI_MAPREG_TYPE_MEM, 0,
+            &sc->sc_regt, &sc->sc_regh, &sc->sc_reg_pa, 0) != 0 ) {
+            aprint_error_dev(sc->sc_dev, "unable to the BAR");
+            return;
+        }
+
+        aprint_normal_dev(sc->sc_dev, "registers at 0x%08x\n",
+            (uint32_t) sc->sc_reg_pa);
+}
+\end{verbatim}
 \end{frame}
 
 
 
 
-\subsection{Accessing the hardware registers}
-\subsection{Testing}
+%\subsection{Accessing the hardware registers}
+%\subsection{Testing}
 
-\section{Interacting with the user space}
-\subsection{Device files}
-\subsection{Utilising ioctls}
-\subsection{Example user space program}
-
-
+%\section{Interacting with the user space}
+%\subsection{Device files}
+%\subsection{Utilising ioctls}
+%\subsection{Example user space program}
 
 \section{A few tips}
 
@@ -477,8 +777,8 @@ bus_size_t size, int flags, bus_space_handle_t  *handlep);
 \end{itemize}
 \end{frame}
 
-
 \section{Summary}
+\subsection{The end}
 
 \begin{frame}
 \frametitle{Further reading}
@@ -488,7 +788,7 @@ bus_size_t size, int flags, bus_space_handle_t  *handlep);
 		\item A Machine-Independent DMA Framework for NetBSD, Jason R. Thorpe
 		\item Writing Drivers for NetBSD, Jochen Kunz
 		\item NetBSD Documentation: Writing a pseudo device
-		\item driver(9), bus\_space(9), bus\_dma(9), pci(9) {\tt man} pages, etc.
+		\item autoconf(9), bus\_space(9), bus\_dma(9), driver(9), pci(9) {\tt man} pages, etc.
 	\end{itemize}
 	\item Source code of the drivers:
 	\begin{itemize}
