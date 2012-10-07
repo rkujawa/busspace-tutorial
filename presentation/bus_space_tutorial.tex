@@ -498,6 +498,25 @@ struct faa_softc {
 \end{lstlisting}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Adding the new PCI driver - registering the driver}
+\scriptsize
+\begin{itemize}
+	\item {\tt src/sys/dev/DEVNAMES}
+\end{itemize}
+\begin{verbatim}
+--- DEVNAMES	1 Sep 2012 11:19:58 -0000	1.279
++++ DEVNAMES	6 Oct 2012 19:59:06 -0000
+@@ -436,6 +436,7 @@
+ ex			MI
+ exphy			MI
+ ezload			MI		Attribute
++faa			MI
+ fb			luna68k
+ fb			news68k
+ fb			newsmips
+\end{verbatim}
+\end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Adding the new PCI driver - registering the driver}
@@ -522,27 +541,6 @@ struct faa_softc {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Adding the new PCI driver - registering the driver}
-\scriptsize
-\begin{itemize}
-	\item {\tt src/sys/dev/DEVNAMES}
-\end{itemize}
-\begin{verbatim}
---- DEVNAMES	1 Sep 2012 11:19:58 -0000	1.279
-+++ DEVNAMES	6 Oct 2012 19:59:06 -0000
-@@ -436,6 +436,7 @@
- ex			MI
- exphy			MI
- ezload			MI		Attribute
-+faa			MI
- fb			luna68k
- fb			news68k
- fb			newsmips
-\end{verbatim}
-\end{frame}
-
-
-\begin{frame}[fragile]
 \frametitle{Adding the new PCI driver to the kernel configuration}
 \scriptsize
 \begin{itemize}
@@ -565,6 +563,7 @@ struct faa_softc {
 	\item An instance of {\tt faa} may be attached to any PCI device, any function
 	\item Driver's match function will check if the driver is able to work with given device
 	\item Exact position of rule in the configuration file is not important in this case
+	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+9+NetBSD-current}{config(9)} for description of device definition language
 \end{itemize}
 \end{frame}
 
@@ -789,7 +788,9 @@ Data & Read function & Write function \\
 	\item {\tt src/sys/dev/pci/faareg.h}
 \end{itemize}
 \begin{lstlisting}
-#define FAA_DATA	0x8
+#define FAA_DATA                0x8
+#define FAA_COMMAND             0x4
+#define FAA_COMMAND_STORE_A     __BIT(1)
 \end{lstlisting}
 \begin{itemize}
 	\item Define the new function in main driver code
@@ -816,7 +817,8 @@ faa_attach(device_t parent, device_t self, void *aux)
 static bool
 faa_check(struct faa_softc *sc)
 {
-        uint32_t testval = 0xff11ee22;
+        uint32_t testval = 0xff11ee22; 
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_COMMAND, FAA_COMMAND_STORE_A);
         bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_DATA, testval);
         if (bus_space_read_4(sc->sc_regt, sc->sc_regh, FAA_DATA) == testval)
                 return true;
@@ -833,6 +835,7 @@ faa_check(struct faa_softc *sc)
 	\item Check GXemul log
 \end{itemize}
 \begin{verbatim}
+[ faa: COMMAND register (0x4) WRITE value 0x2 ]
 [ faa: DATA register (0x8) WRITE value 0xff11ee22 ]
 [ faa: DATA register (0x8) READ value 0xff11ee22 ]
 \end{verbatim}
@@ -848,31 +851,141 @@ faa0: registers at 0x10110000
 \end{frame}
 
 \begin{frame}
-\frametitle{Doing sth useful}
+\frametitle{Implementing addition using the hardware}
 \begin{itemize}
-	\item TODO: ...
+	\item Steps...
 \end{itemize}
 \end{frame}
 
-%\subsection{Testing}
+\begin{frame}[fragile]
+\frametitle{Implementing addition using the hardware}
+\begin{itemize}
+	\item Define all registers
+	\item {\tt src/sys/dev/pci/faareg.h}
+\end{itemize}
+\begin{lstlisting}
+#define FAA_STATUS              0x0
+#define FAA_COMMAND             0x4
+#define FAA_COMMAND_ADD         __BIT(0)        
+#define FAA_COMMAND_STORE_A     __BIT(1)
+#define FAA_COMMAND_STORE_B     __BIT(2)
+#define FAA_DATA                0x8
+#define FAA_RESULT              0xC
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Implementing addition using the hardware}
+\begin{itemize}
+	\item Add a new function to main driver code
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
+\begin{lstlisting}
+static void
+faa_attach(device_t parent, device_t self, void *aux)
+{
+        /* ... */
+        aprint_normal_dev(sc->sc_dev, "just checking: 1 + 2 = %d\n", faa_add(sc, 1, 2));
+}
+
+static uint32_t
+faa_add(struct faa_softc *sc, uint32_t a, uint32_t b)
+{
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_COMMAND, FAA_COMMAND_STORE_A);
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_DATA, a);
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_COMMAND, FAA_COMMAND_STORE_B);
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_DATA, b);
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_COMMAND, FAA_COMMAND_ADD);
+        return bus_space_read_4(sc->sc_regt, sc->sc_regh, FAA_RESULT);
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Implementing addition using the hardware - running the example}
+\begin{itemize}
+	\item Update the kernel binary and run it again
+	\item Check GXemul log
+\end{itemize}
+\begin{verbatim}
+[ faa: COMMAND register (0x4) WRITE value 0x2 ]
+[ faa: DATA register (0x8) WRITE value 0x1 ]
+[ faa: COMMAND register (0x4) WRITE value 0x4 ]
+[ faa: DATA register (0x8) WRITE value 0x2 ]
+[ faa: COMMAND register (0x4) WRITE value 0x1 ]
+[ faa: RESULT register (0xC) READ value 0x3 ]
+\end{verbatim}
+\begin{itemize}
+	\item Looks like it worked!
+\end{itemize}
+\tiny
+\begin{verbatim}
+faa0 at pci0 dev 12 function 0: Fake Cards Advanced Addition Accelerator (rev. 0x01)
+faa0: registers at 0x10110000
+faa0: just checking: 1 + 2 = 3
+\end{verbatim}
+\end{frame}
+
 
 \section{Interacting with the user space}
 
+\subsection{Device files}
+
 \begin{frame}
-\frametitle{Designing the interface}
+\frametitle{Kernel-userspace interface}
 \begin{itemize}
+	\item Now that the core functionality of the kernel driver is working, it should be exposed to userspace
 	\item Interface between kernel driver and userspace can be designed in many different ways
-	\item Most of them will utilise the device files
-	\item Even when using the device files there is no single method that fits all use cases
-	\item read/write
-	\item  
+	\item Classic UNIX way of interfacing between the kernel and userspace is device file
+	\item Even when using the device files there is no single interfacing method that fits all use cases
+	\item It's up to programmer to define the communication protocol
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Device files}
+\begin{itemize}
+	\scriptsize
+	\item {\tt crw-r-----  1 root  wheel  88, 2 Aug 12 21:53 /dev/file}
+	\normalsize
+	\item Kernel identifies which driver should service the request to this file by using major and minor numbers (88 and 2 in the example above)
+	\item Major number identifies the driver
+	\item Minor number usually identifies the driver instance, although the driver is free to use it in any other way
+	\item In the NetBSD device files are created statically
+	\begin{itemize}
+		\item By {\tt MAKEDEV} script during installation
+		\item Manually by using {\tt mknod} utility
+	\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Operations on device files}
+\begin{itemize}
+	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}
+	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}
+	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}
+	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}
+	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)}
+	\item and more\dots
+	\item Any mix of the above system calls might be used to interface between the kernel and userspace
 
 \end{itemize}
 \end{frame}
 
-%\subsection{Device files}
+\begin{frame}
+\frametitle{cdevsw}
+\begin{itemize}
+	\item Not all system calls must be implemented, although some device layers define a set of calls that driver must implement
+	\item For example disk drivers must implement open, close, read, write and ioctl
+\end{itemize}
+\end{frame}
+
 %\subsection{Utilising ioctls}
 %\subsection{Example user space program}
+
+
+
 
 \section{A few tips}
 
