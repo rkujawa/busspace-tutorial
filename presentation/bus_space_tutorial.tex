@@ -47,8 +47,8 @@
 }
 
 \lstset{
-   language=bash,
-   basicstyle=\footnotesize,
+   language=C,
+   basicstyle=\tiny,
    breaklines=true,
    escapechar=\@,
    commentstyle=\color{NetBSD-orange}
@@ -79,7 +79,6 @@
 
 \begin{frame}
 \frametitle{Why was this tutorial created?}
-
 \begin{itemize}
 	\item Introductory-level documentation is scarce
 	\item Writing the device drivers is often considered black magic
@@ -93,9 +92,7 @@
 
 \begin{frame}
 \frametitle{What won't be covered here?}
-
 We don't have much time, so several \sout{advanced} topics were omitted:
-
 \begin{itemize}
 	\item Interrupt handling
 	\item Direct Memory Access and {\tt bus\_dma} framework
@@ -105,9 +102,7 @@ We don't have much time, so several \sout{advanced} topics were omitted:
 	\item Examples for buses other than PCI
 	\item Pretty much everything else...
 \end{itemize}
-
 However, once you finish this tutorial, you should be able to purse this knowledge yourself.
-
 \end{frame}
 
 \subsection{What is a driver anyway?}
@@ -218,6 +213,16 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \begin{center}
 \includegraphics[scale=0.4]{img_cobaltdevices.png}
 \end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{The bus\_space(9) framework}
+\begin{itemize}
+	\item "The goal of the bus\_space functions is to allow a single
+     driver source file to manipulate a set of devices on different system
+     architectures, and to allow a single driver object file to manipulate a
+     set of devices on multiple bus types on a single architecture."
+\end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -353,7 +358,7 @@ not configured
 \begin{itemize}
 	\item Choose a name - short, easy to remember, avoid numbers
 	\begin{itemize}
-		\item {\tt faa} looks like a good name
+		\item {\tt faa} looks like a good name, but you can choose any name you like
 	\end{itemize}
 	\item Create a set of new files in {\tt src/sys/dev/pci}
 	\begin{itemize}
@@ -432,7 +437,7 @@ not configured
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faa.c}
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 #include <sys/cdefs.h>
 __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/param.h>
@@ -441,6 +446,7 @@ __KERNEL_RCSID(0, "$NetBSD$");
 #include <dev/pci/pcidevs.h>
 #include <dev/pci/faareg.h>
 #include <dev/pci/faavar.h>
+
 static int      faa_match(device_t, cfdata_t, void *);
 static void     faa_attach(device_t, device_t, void *);
 
@@ -452,10 +458,12 @@ faa_match(device_t parent, cfdata_t match, void *aux)
 {
         return 0;
 }
+
 static void
 faa_attach(device_t parent, device_t self, void *aux)
-{ }
-\end{verbatim}
+{ 
+}
+\end{lstlisting}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -464,7 +472,7 @@ faa_attach(device_t parent, device_t self, void *aux)
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faareg.h}
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 #ifndef FAAREG_H
 #define FAAREG_H
 /* 
@@ -473,20 +481,20 @@ faa_attach(device_t parent, device_t self, void *aux)
  * We'll add them later, let's leave it empty for now.
  */
 #endif /* FAAREG_H */
-\end{verbatim}
+\end{lstlisting}
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faavar.h}
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 #ifndef FAAVAR_H
 #define FAAVAR_H
 
+/* sc_dev is an absolute minimum, we'll add more later */
 struct faa_softc {
         device_t sc_dev;
-		/* sc_dev is an absolute minimum, we'll add more later */
 };
 #endif /* FAAVAR_H */
-\end{verbatim}
+\end{lstlisting}
 \end{frame}
 
 
@@ -574,19 +582,19 @@ struct faa_softc {
 	\item Use {\tt PCI\_VENDOR} and {\tt PCI\_PRODUCT} macros to obtain the IDs
 \end{itemize}
 \scriptsize
-\begin{verbatim}
+\begin{lstlisting}
 static int
 faa_match(device_t parent, cfdata_t match, void *aux)
 {
         const struct pci_attach_args *pa = (const struct pci_attach_args *)aux;
 
-        if ((PCI_VENDOR(pa->pa_id) == PCI_VENDOR_FAKECARDS) &&
-            (PCI_PRODUCT(pa->pa_id) == PCI_PRODUCT_FAKECARDS_AAA))
+        if ((PCI_VENDOR(pa->pa_id) == PCI_VENDOR_FAKECARDS) 
+            && (PCI_PRODUCT(pa->pa_id) == PCI_PRODUCT_FAKECARDS_AAA))
                 return 1;
 
         return 0;
 }
-\end{verbatim}
+\end{lstlisting}
 \end{frame}
 
 \subsection{Attaching to the PCI device}
@@ -625,7 +633,9 @@ faa0 at pci0 dev 12 function 0
 	\item In a memory-protected environment like the NetBSD one cannot directly access the physical addresses
 	\item The kernel has its own virtual address space
     \item Physical space can be made visible in kernel virtual address space through process of mapping
-    \item It's a machine-dependent process but it's also conveniently hidden from the programmer by bus\_space
+    \item It's a machine-dependent process but it's also conveniently hidden from the programmer by bus\_space framework
+    \item "Bus space must be mapped before it can be used, and should be unmapped
+     when it is no longer needed."
 \end{itemize}
 \end{frame}
 
@@ -709,7 +719,7 @@ struct faa_softc {
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faa.c}
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 static void
 faa_attach(device_t parent, device_t self, void *aux)
 {
@@ -720,22 +730,101 @@ faa_attach(device_t parent, device_t self, void *aux)
 
         pci_aprint_devinfo(pa, NULL);
 
-        if (pci_mapreg_map(pa, FAA_MMREG_BAR, PCI_MAPREG_TYPE_MEM, 0,
-            &sc->sc_regt, &sc->sc_regh, &sc->sc_reg_pa, 0) != 0 ) {
-            aprint_error_dev(sc->sc_dev, "unable to the BAR");
+        if (pci_mapreg_map(pa, FAA_MMREG_BAR, PCI_MAPREG_TYPE_MEM, 0, &sc->sc_regt, &sc->sc_regh, &sc->sc_reg_pa, 0) != 0 ) {
+            aprint_error_dev(sc->sc_dev, "can't map\n");
             return;
         }
 
-        aprint_normal_dev(sc->sc_dev, "registers at 0x%08x\n",
-            (uint32_t) sc->sc_reg_pa);
+        aprint_normal_dev(sc->sc_dev, "regs at 0x%08x\n", (uint32_t) sc->sc_reg_pa);
 }
-\end{verbatim}
+\end{lstlisting}
 \end{frame}
 
+\subsection{Accessing the hardware registers}
 
+\begin{frame}
+\frametitle{Accessing the hardware registers}
+\begin{itemize}
+	\item The {\tt bus\_space\_read\_*} and {\tt bus\_space\_write\_*} functions are basic methods of reading and writing the hardware registers
+	\item {\tt uintX\_t bus\_space\_read\_X(bus\_space\_tag\_t space, bus\_space\_handle\_t handle, bus\_size\_t offset);}
+	\item {\tt void bus\_space\_write\_X(bus\_space\_tag\_t space, bus\_space\_handle\_t handle, bus\_size\_t offset, uintX\_t value);}
+	\begin{itemize}
+		\item {\tt space} - tag describing the bus
+		\item {\tt handle} - describes the exact location on bus where read/write should occur, this handle is obtained by {\tt bus\_space\_map}
+		\item {\tt offset} - offset from handle location
+		\item Read function returns the data read from specified location, while write has argument {\tt value} which should be filled with data to be written
+	\end{itemize}
+\end{itemize}
+\end{frame}
 
+\begin{frame}
+\frametitle{Variants of bus\_space\_read and bus\_space\_write}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Data & Read function & Write function \\
+\hline
+\hline
+8-bit & bus\_space\_read\_1 & bus\_space\_write\_1 \\
+\hline
+16-bit & bus\_space\_read\_2 & bus\_space\_write\_2 \\
+\hline
+32-bit & bus\_space\_read\_4 & bus\_space\_write\_4 \\
+\hline
+64-bit & bus\_space\_read\_8 & bus\_space\_write\_8 \\
+\hline
+\end{tabular}
+\end{center}
+\begin{itemize}
+	\item There are many more variants of read and write functions and they are useful in certain situations, see the \href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_space++NetBSD-current}{bus\_space(9)} man page
+\end{itemize}
+\end{frame}
 
-%\subsection{Accessing the hardware registers}
+\begin{frame}[fragile]
+\frametitle{Accessing the hardware registers - example}
+\begin{itemize}
+	\item Create function that will write a value into {\tt DATA} register of our device, then read it back and check if the value is the same as written
+	\item Define {\tt DATA} register in the driver
+	\item {\tt src/sys/dev/pci/faareg.h}
+\end{itemize}
+\begin{lstlisting}
+#define FAA_DATA	0x8
+\end{lstlisting}
+\begin{itemize}
+	\item Define the new function in main driver code
+	\item {\tt static bool faa\_check(faa\_softc *sc);}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Accessing the hardware registers - example}
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
+\begin{lstlisting}
+static void
+faa_attach(device_t parent, device_t self, void *aux)
+{
+   /* ... */
+   if (!faa_check(sc)) {
+   		aprint_error_dev(sc->sc_dev, "hardware not responding\n");
+        return;
+   }
+}
+
+bool
+faa_check(faa_softc *sc) 
+{
+        uint32_t testval = 0xff11ee22
+        bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_DATA, testval);
+        if (bus_space_read_4(sc->sc_regt, sc->sc_regh, FAA_DATA) == testval)
+                return true;
+
+        return false;
+}
+\end{lstlisting}
+\end{frame}
+
 %\subsection{Testing}
 
 %\section{Interacting with the user space}
