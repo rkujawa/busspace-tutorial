@@ -1,6 +1,6 @@
 \documentclass[dvipsnames,table]{beamer}
 
-\usetheme{Frankfurt}
+\usetheme{Rochester}
 \usecolortheme{orchid}
 
 \usepackage{listings}
@@ -62,6 +62,8 @@
 
 \begin{document}
 
+\section{Introduction}
+
 \begin{frame}
 \titlepage
 \end{frame}
@@ -74,7 +76,6 @@
 }
 \end{frame}
 
-\section{Introduction}
 \subsection{Why was this tutorial created?}
 
 \begin{frame}
@@ -288,7 +289,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \frametitle{Our hardware - technical details}
 \begin{itemize}
 	\item Implemented as a PCI card
-	\item Has just two registers in PCI memory space
+	\item Has just four registers in the PCI memory space
 \end{itemize}
 \end{frame}
 
@@ -606,7 +607,7 @@ faa0 at pci0 dev 12 function 0
 \end{verbatim}
 \begin{itemize}
 	\item The driver has successfully matched and attached to PCI device but still is doing nothing useful
-	\item Let's fill attach function and actually program the hardware
+	\item Let's fill an attach function and actually program the hardware
 \end{itemize}
 \end{frame}
 
@@ -792,7 +793,7 @@ Data & Read function & Write function \\
 \end{lstlisting}
 \begin{itemize}
 	\item Define the new function in main driver code
-	\item {\tt static bool faa\_check(faa\_softc *sc);}
+	\item {\tt static bool faa\_check(struct faa\_softc *sc);}
 \end{itemize}
 \end{frame}
 
@@ -812,10 +813,10 @@ faa_attach(device_t parent, device_t self, void *aux)
    }
 }
 
-bool
-faa_check(faa_softc *sc) 
+static bool
+faa_check(struct faa_softc *sc)
 {
-        uint32_t testval = 0xff11ee22
+        uint32_t testval = 0xff11ee22;
         bus_space_write_4(sc->sc_regt, sc->sc_regh, FAA_DATA, testval);
         if (bus_space_read_4(sc->sc_regt, sc->sc_regh, FAA_DATA) == testval)
                 return true;
@@ -825,9 +826,50 @@ faa_check(faa_softc *sc)
 \end{lstlisting}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{Accessing the hardware registers - running the example}
+\begin{itemize}
+	\item Update the kernel binary and run it again
+	\item Check GXemul log
+\end{itemize}
+\begin{verbatim}
+[ faa: DATA register (0x8) WRITE value 0xff11ee22 ]
+[ faa: DATA register (0x8) READ value 0xff11ee22 ]
+\end{verbatim}
+\begin{itemize}
+	\item GXemul will conveniently display all accesses to our device
+	\item The {\tt faa} driver still does attach without error, which means that check function is working properly
+\end{itemize}
+\tiny
+\begin{verbatim}
+faa0 at pci0 dev 12 function 0: Fake Cards Advanced Addition Accelerator (rev. 0x01)
+faa0: registers at 0x10110000
+\end{verbatim}
+\end{frame}
+
+\begin{frame}
+\frametitle{Doing sth useful}
+\begin{itemize}
+	\item TODO: ...
+\end{itemize}
+\end{frame}
+
 %\subsection{Testing}
 
-%\section{Interacting with the user space}
+\section{Interacting with the user space}
+
+\begin{frame}
+\frametitle{Designing the interface}
+\begin{itemize}
+	\item Interface between kernel driver and userspace can be designed in many different ways
+	\item Most of them will utilise the device files
+	\item Even when using the device files there is no single method that fits all use cases
+	\item read/write
+	\item  
+
+\end{itemize}
+\end{frame}
+
 %\subsection{Device files}
 %\subsection{Utilising ioctls}
 %\subsection{Example user space program}
