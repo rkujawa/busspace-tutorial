@@ -1,0 +1,25 @@
+Index: pcidevs
+===================================================================
+RCS file: /cvsroot/src/sys/dev/pci/pcidevs,v
+retrieving revision 1.1139
+diff -u -r1.1139 pcidevs
+--- pcidevs	29 Sep 2012 10:26:14 -0000	1.1139
++++ pcidevs	7 Oct 2012 22:35:47 -0000
+@@ -669,6 +669,7 @@
+ vendor CHRYSALIS	0xcafe	Chrysalis-ITS
+ vendor MIDDLE_DIGITAL	0xdeaf	Middle Digital
+ vendor ARC		0xedd8	ARC Logic
++vendor FAKECARDS	0xfabc	Fake Cards
+ vendor INVALID		0xffff	INVALID VENDOR ID
+ 
+ /*
+@@ -2120,6 +2121,9 @@
+ /* Eumitcom products */
+ product EUMITCOM WL11000P	0x1100	WL11000P PCI WaveLAN/IEEE 802.11
+ 
++/* FakeCards products */
++product FAKECARDS AAA		0x0001	Advanced Addition Accelerator
++
+ /* O2 Micro */
+ product O2MICRO 00F7		0x00f7	Integrated OHCI IEEE 1394 Host Controller
+ product O2MICRO OZ6729		0x6729	OZ6729 PCI-PCMCIA Bridge
