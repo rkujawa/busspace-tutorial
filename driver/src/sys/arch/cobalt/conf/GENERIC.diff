@@ -1,0 +1,17 @@
+Index: GENERIC
+===================================================================
+RCS file: /cvsroot/src/sys/arch/cobalt/conf/GENERIC,v
+retrieving revision 1.134
+diff -u -r1.134 GENERIC
+--- GENERIC	10 Mar 2012 21:51:50 -0000	1.134
++++ GENERIC	7 Oct 2012 22:33:15 -0000
+@@ -302,6 +302,9 @@
+ #fms*		at pci? dev ? function ?	# Forte Media FM801
+ #sv*		at pci? dev ? function ?	# S3 SonicVibes
+ 
++# Fake Cards Advanced Addition Accelerator
++faa*		at pci? dev ? function ?
++
+ # Audio support
+ #audio*		at audiobus?
+ 

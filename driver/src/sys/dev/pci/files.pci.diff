@@ -1,0 +1,17 @@
+Index: files.pci
+===================================================================
+RCS file: /cvsroot/src/sys/dev/pci/files.pci,v
+retrieving revision 1.360
+diff -u -r1.360 files.pci
+--- files.pci	2 Aug 2012 00:17:44 -0000	1.360
++++ files.pci	7 Oct 2012 22:32:01 -0000
+@@ -1122,3 +1122,9 @@
+ device	tdvfb: wsemuldisplaydev, rasops8, vcons, videomode
+ attach	tdvfb at pci
+ file	dev/pci/tdvfb.c		tdvfb	
++
++# FakeCards Advanced Addition Accelerator
++device	faa
++attach	faa at pci
++file	dev/pci/faa.c		faa	
++
