@@ -32,18 +32,34 @@
 __KERNEL_RCSID(0, "$NetBSD$");
 #include <sys/param.h>
 #include <sys/device.h>
+#include <sys/conf.h>
+
 #include <dev/pci/pcivar.h>
 #include <dev/pci/pcidevs.h>
 #include <dev/pci/faareg.h>
 #include <dev/pci/faavar.h>
+#include <dev/pci/faaio.h>
 
 static int	faa_match(device_t, cfdata_t, void *);
 static void	faa_attach(device_t, device_t, void *);
 static bool	faa_check(struct faa_softc *sc);
 static uint32_t	faa_add(struct faa_softc *sc, uint32_t a, uint32_t b);
 
+static void	faaioctl_add(struct faa_softc *sc, struct faaio_add *data);
+
+dev_type_open(faaopen);
+dev_type_close(faaclose);
+dev_type_ioctl(faaioctl);
+
 CFATTACH_DECL_NEW(faa, sizeof(struct faa_softc),
     faa_match, faa_attach, NULL, NULL);
+
+const struct cdevsw faa_cdevsw = {
+	faaopen, faaclose, noread, nowrite, faaioctl,
+	nostop, notty, nopoll, nommap, nokqfilter, D_OTHER 
+};
+
+extern struct cfdriver faa_cd;
 
 static int
 faa_match(device_t parent, cfdata_t match, void *aux)
@@ -106,42 +122,58 @@ faa_add(struct faa_softc *sc, uint32_t a, uint32_t b)
 	return bus_space_read_4(sc->sc_regt, sc->sc_regh, FAA_RESULT);
 }
 
-static int
-faa_open(dev_t dev, int flags, int mode, struct lwp *l)
+int
+faaopen(dev_t dev, int flags, int mode, struct lwp *l)
 {
-	faa_softc *sc;
+	struct faa_softc *sc;
 
 	sc = device_lookup_private(&faa_cd, minor(dev));
 
 	if (sc == NULL)
 		return ENXIO;
-	if (sc->flags & FAA_OPEN)
+	if (sc->sc_flags & FAA_OPEN) 
 		return EBUSY;
 
 	return 0;
 }
 
-static int
-faa_close(dev_t dev, int flag, int mode, struct lwp *l)
+int
+faaclose(dev_t dev, int flag, int mode, struct lwp *l)
 {
+	struct faa_softc *sc;
+
 	sc = device_lookup_private(&faa_cd, minor(dev));
 
-	if (sc->flags & FAA_OPEN)
-		sc->flags =~ FAA_OPEN; 
+	if (sc->sc_flags & FAA_OPEN)
+		sc->sc_flags =~ FAA_OPEN; 
 
 	return 0;
 }
 
-static int
-faa_ioctl(dev_t dev, u_long cmd, void *data, int flag, struct lwp *l)
+int
+faaioctl(dev_t dev, u_long cmd, void *data, int flag, struct lwp *l)
 {
 	struct faa_softc *sc = device_lookup_private(&faa_cd, minor(dev));
+
 	int err;
 
 	switch (cmd) {
+	case FAAIO_ADD:
+		faaioctl_add(sc, (struct faaio_add *) data);
+		return 0;
 	default:
 		err = EINVAL;
 		break;
 	}
 	return(err);
 }
+
+static void
+faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
+{
+	aprint_normal_dev(sc->sc_dev, "got ioctl with a %d, b %d\n",
+	    data->a, data->b);
+
+	*(data->result) = faa_add(sc, data->a, data->b);
+}
+

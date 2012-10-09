@@ -1,0 +1,16 @@
+Index: majors.cobalt
+===================================================================
+RCS file: /cvsroot/src/sys/arch/cobalt/conf/majors.cobalt,v
+retrieving revision 1.30
+diff -u -r1.30 majors.cobalt
+--- majors.cobalt	30 Jun 2011 20:09:22 -0000	1.30
++++ majors.cobalt	9 Oct 2012 18:27:51 -0000
+@@ -62,6 +62,8 @@
+ 
+ device-major	nsmb		char 98			nsmb
+ 
++device-major	faa		char 101		faa
++
+ # Majors up to 143 are reserved for machine-dependent drivers.
+ # New machine-independent driver majors are assigned in
+ # sys/conf/majors.

@@ -31,6 +31,8 @@
 #ifndef FAAVAR_H
 #define FAAVAR_H
 
+#include <sys/cdefs.h>
+
 struct faa_softc {
 	device_t sc_dev;
 
@@ -38,6 +40,8 @@ struct faa_softc {
 	bus_space_handle_t sc_regh;
 	bus_addr_t sc_reg_pa;
 
+#define FAA_OPEN 1
+	uint8_t sc_flags;
 };
 
 #endif /* FAAVAR_H */

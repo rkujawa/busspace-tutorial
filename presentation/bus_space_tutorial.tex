@@ -415,7 +415,8 @@ not configured
 \begin{frame}
 \frametitle{Adding the new PCI driver - main driver cont'd}
 \begin{itemize}
-	\item {\tt CFATTACH\_DECL\_NEW(faa, sizeof(struct faa\_softc),    faa\_match, faa\_attach, NULL, NULL);}
+	\item {\tt CFATTACH\_DECL\_NEW(faa, sizeof(struct faa\_softc),
+    faa\_match, faa\_attach, NULL, NULL);}
 	\begin{itemize}
 		\item driver name
 		\item size of softc structure containing state of driver's instance
@@ -969,21 +970,57 @@ faa0: just checking: 1 + 2 = 3
 	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)}
 	\item and more\dots
 	\item Any mix of the above system calls might be used to interface between the kernel and userspace
+	\item We'll later implement ioctl(2)-based communication mechanism
 
 \end{itemize}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{cdevsw}
 \begin{itemize}
-	\item Not all system calls must be implemented, although some device layers define a set of calls that driver must implement
+	\item Not all calls must be implemented, although some device layers define a set of calls that driver must implement
 	\item For example disk drivers must implement open, close, read, write and ioctl
+\end{itemize}
+\begin{lstlisting}
+const struct cdevsw faa_cdevsw = {
+        faaopen, faaclose, noread, nowrite, faaioctl,
+        nostop, notty, nopoll, nommap, nokqfilter, D_OTHER
+};
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}
+\frametitle{Defining ioctls}
+\begin{itemize}
+	\item Structures shared between the kernel and userspace
+	\item Usually {\tt switch}
 \end{itemize}
 \end{frame}
 
 %\subsection{Utilising ioctls}
 %\subsection{Example user space program}
 
+\begin{frame}
+\frametitle{Defining device major number}
+\begin{itemize}
+	\item {\tt src/sys/arch/\$PORTNAME/conf/majors.\$PORTNAME}
+	\item {\tt src/sys/arch/cobalt/conf/majors.cobalt}
+	\item {\tt device-major faa char 101 faa}
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Creating device node}
+\begin{itemize}
+	\item The {\tt mknod} utility can be used...
+	\item {\tt mknod name [b | c] [major | driver] minor}
+	\item {\tt mknod /dev/faa0 c faa 0}
+	\item Created successfully
+	\scriptsize
+	\item {\tt crw-r--r--  1 root  wheel  101, 0 Oct  8  2012 /dev/faa0}
+	\normalsize
+\end{itemize}
+\end{frame}
 
 
 

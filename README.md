@@ -9,6 +9,7 @@ Prerequisites for running the materials:
 - X11 client libraries (server not required but recommended)
 - git
 - wget (or other download tool)
+- mkisofs (cdrtools)
 
 Download and run the scripts/setup.sh script. It will automagically fetch the git repositories, GXemul, the NetBSD tools and kernel. Follow instructions. This script was tested only on the NetBSD 6 and MacOS X 10.8.2, YMMV.  
 
