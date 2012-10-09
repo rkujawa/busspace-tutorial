@@ -976,12 +976,16 @@ faa0: just checking: 1 + 2 = 3
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{cdevsw}
+\frametitle{Adding cdevsw}
 \begin{itemize}
 	\item Not all calls must be implemented, although some device layers define a set of calls that driver must implement
 	\item For example disk drivers must implement open, close, read, write and ioctl
 \end{itemize}
 \begin{lstlisting}
+dev_type_open(faaopen);
+dev_type_close(faaclose);
+dev_type_ioctl(faaioctl);
+
 const struct cdevsw faa_cdevsw = {
         faaopen, faaclose, noread, nowrite, faaioctl,
         nostop, notty, nopoll, nommap, nokqfilter, D_OTHER
@@ -996,9 +1000,6 @@ const struct cdevsw faa_cdevsw = {
 	\item Usually {\tt switch}
 \end{itemize}
 \end{frame}
-
-%\subsection{Utilising ioctls}
-%\subsection{Example user space program}
 
 \begin{frame}
 \frametitle{Defining device major number}
@@ -1022,7 +1023,65 @@ const struct cdevsw faa_cdevsw = {
 \end{itemize}
 \end{frame}
 
+\subsection{An example user space program}
 
+\begin{frame}
+\frametitle{An example user space program}
+\begin{itemize}
+	\item Will call the driver through the {\tt ioctl}
+	\item As simple as possible
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{An example user space program - source}
+\begin{lstlisting}
+void add(int, uint32_t, uint32_t);
+
+static const char* faa_device = "/dev/faa0";
+
+int
+main(int argc, char *argv[])
+{
+        int devfd;
+
+        if (argc != 3) {
+                printf("usage: %s a b\n", argv[0]);
+                return 1;
+        }
+        if ( (devfd = open(faa_device, O_RDWR)) == -1) {
+                perror("can't open device file");
+                return 1;
+        }
+
+        add(devfd, atoi(argv[1]), atoi(argv[2]));
+
+        close(devfd);
+        return 0;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{An example user space program - source}
+\begin{lstlisting}
+void
+add(int devfd, uint32_t a, uint32_t b)
+{
+        struct faaio_add faaio;
+        uint32_t result = 0;
+
+        faaio.result = &result;
+        faaio.a = a;
+        faaio.b = b;
+
+        if (ioctl(devfd, FAAIO_ADD, &faaio) == -1) {
+                perror("ioctl failed");
+        }
+        printf("%d\n", result);
+}
+\end{lstlisting}
+\end{frame}
 
 \section{A few tips}
 
