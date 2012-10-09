@@ -288,8 +288,24 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \begin{frame}
 \frametitle{Our hardware - technical details}
 \begin{itemize}
-	\item Implemented as a PCI card
-	\item Has just four registers in the PCI memory space
+	\item Implemented as a PCI device
+	\item Has few registers in the PCI memory space
+	\item Addition operation in hardware
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Our hardware - technical details (PCI configuration)}
+\begin{itemize}
+	\item PCI configuration register 0x10 (Base Address Register) defines... 
+	\item Memory mapped registers are 16 bytes...
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Our hardware - technical details (memory mapped register set)}
+\begin{itemize}
+	\item Registers descriptions... 
 \end{itemize}
 \end{frame}
 
@@ -560,9 +576,9 @@ struct faa_softc {
  # Audio support
  #audio*		at audiobus?
 \end{verbatim}
+\normalsize
 \begin{itemize}
-	\item An instance of {\tt faa} may be attached to any PCI device, any function
-	\item Driver's match function will check if the driver is able to work with given device
+	\item Above definition means that an instance of {\tt faa} may be attached to any PCI bus, any device, any function
 	\item Exact position of rule in the configuration file is not important in this case
 	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+9+NetBSD-current}{config(9)} for description of device definition language
 \end{itemize}
@@ -572,7 +588,10 @@ struct faa_softc {
 \frametitle{Adding the new PCI driver - example}
 \begin{itemize}
 	\item The driver should compile now
-	\item But the kernel still won't "find" the device
+	\item Driver's match function will check if the driver is able to work with given
+ device
+ 	\item Since it is not implemented, the kernel will not attach the driver
+
 \end{itemize}
 \end{frame}
 
@@ -981,6 +1000,9 @@ faa0: just checking: 1 + 2 = 3
 	\item Not all calls must be implemented, although some device layers define a set of calls that driver must implement
 	\item For example disk drivers must implement open, close, read, write and ioctl
 \end{itemize}
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
 \begin{lstlisting}
 dev_type_open(faaopen);
 dev_type_close(faaclose);
@@ -994,11 +1016,85 @@ const struct cdevsw faa_cdevsw = {
 \end{frame}
 
 \begin{frame}
-\frametitle{Defining ioctls}
+\frametitle{Implementing the cdevsw operations}
+\begin{itemize}
+	\item ...
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Implemeting the cdevsw operations - open / close}
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
+\begin{lstlisting}
+int
+faaopen(dev_t dev, int flags, int mode, struct lwp *l)
+{
+        struct faa_softc *sc;
+        sc = device_lookup_private(&faa_cd, minor(dev));
+
+        if (sc == NULL)
+                return ENXIO;
+        if (sc->sc_flags & FAA_OPEN)
+                return EBUSY;
+
+        return 0;
+}
+int
+faaclose(dev_t dev, int flag, int mode, struct lwp *l)
+{
+        struct faa_softc *sc;
+        sc = device_lookup_private(&faa_cd, minor(dev));
+
+        if (sc->sc_flags & FAA_OPEN)
+                sc->sc_flags =~ FAA_OPEN;
+
+        return 0;
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}
+\frametitle{ioctls}
 \begin{itemize}
 	\item Structures shared between the kernel and userspace
-	\item Usually {\tt switch}
+	\item Usually {\tt switch} in kernel driver based on cmd number...
+	\item TODO
 \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Implemeting the cdevsw operations - ioctl}
+\begin{itemize}
+	\item {\tt src/sys/dev/pci/faa.c}
+\end{itemize}
+\begin{lstlisting}
+int
+faaioctl(dev_t dev, u_long cmd, void *data, int flag, struct lwp *l)
+{
+        struct faa_softc *sc = device_lookup_private(&faa_cd, minor(dev));
+        int err;
+
+        switch (cmd) {
+        case FAAIO_ADD:
+                faaioctl_add(sc, (struct faaio_add *) data);
+                return 0;
+        default:
+                err = EINVAL;
+                break;
+        }
+        return(err);
+}
+static void
+faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
+{
+        aprint_normal_dev(sc->sc_dev, "got ioctl with a %d, b %d\n",
+            data->a, data->b);
+
+        *(data->result) = faa_add(sc, data->a, data->b);
+}
+\end{lstlisting}
 \end{frame}
 
 \begin{frame}
@@ -1083,6 +1179,17 @@ add(int devfd, uint32_t a, uint32_t b)
 \end{lstlisting}
 \end{frame}
 
+\begin{frame}[fragile]
+\frametitle{An example user space program - running it}
+\begin{verbatim}
+# make
+cc -o aaa_add aaa_add.c
+# ./aaa_add 3 7
+faa0: got ioctl with a 3, b 7
+10
+\end{verbatim}
+\end{frame}
+
 \section{A few tips}
 
 \subsection{Avoiding common pitfalls}
@@ -1150,7 +1257,7 @@ add(int devfd, uint32_t a, uint32_t b)
 
 
 \begin{frame}
-\frametitle{Questions}
+\frametitle{Questions?}
 
 \begin{itemize}
 	\item Do you have any questions?
@@ -1158,7 +1265,7 @@ add(int devfd, uint32_t a, uint32_t b)
 \end{frame}
 
 \begin{frame}
-\frametitle{End\ldots}
+\frametitle{The End\ldots}
 \vspace*{-0.8cm}
 \begin{center}
 \includegraphics[scale=0.5]{NetBSD.png}
