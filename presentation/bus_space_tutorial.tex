@@ -288,28 +288,117 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \begin{frame}
 \frametitle{Our hardware - technical details}
 \begin{itemize}
+\item Foo
+\begin{itemize}
 	\item Implemented as a PCI device
 	\item Has few registers in the PCI memory space
 	\item Addition operation in hardware
 \end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Our hardware - technical details (PCI configuration)}
+\item (PCI configuration) TODO
 \begin{itemize}
 	\item PCI configuration register 0x10 (Base Address Register) defines... 
 	\item Memory mapped registers are 16 bytes...
+\end{itemize}
 \end{itemize}
 \end{frame}
 
 \begin{frame}
 \frametitle{Our hardware - technical details (memory mapped register set)}
+\scriptsize
 \begin{itemize}
-	\item Registers descriptions... 
+	\item Advanced Addition Acceleration registers
+\end{itemize}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Register Name & Offset & Description \\
+\hline
+\hline
+COMMAND & 0x4 & Register used to issue commands to the engine \\
+\hline
+DATA & 0x8 & Register used to load data to internal engine registers \\
+\hline
+RESULT & 0xC & Register used to store the result of arithmetic operation \\
+\hline
+\end{tabular}
+\end{center}
+\begin{itemize}
+	\item COMMAND register 
+\end{itemize}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Bit & R/W & Description \\
+\hline
+\hline
+0 & W & Execute ADD operation on values loaded into internal register A and B \\
+\hline
+1 & R/W & Select internal register A for access through DATA register  \\
+\hline
+2 & R/W & Select internal register B for access through DATA register \\
+\hline
+\end{tabular}
+\end{center}
+\begin{itemize}
+	\item Selecting internal register A and B at the same time will lead to undefined behaviour
+\end{itemize}
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Our hardware - technical details (memory mapped register set)}
+\scriptsize
+\begin{itemize}
+	\item DATA register
+\end{itemize}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Bit & R/W & Description \\
+\hline
+\hline
+0:31 & R/W & Read/write the value in internal engine register \\
+\hline
+\end{tabular}
+\end{center}
+\begin{itemize}
+	\item RESULT register 
+\end{itemize}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+Bit & R/W & Description \\
+\hline
+\hline
+0:31 & R & Holds the result of last ADD operation \\
+\hline
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\frametitle{Our hardware - technical details (operation algorithm)}
+\begin{itemize}
+	\item Select the internal register {\tt A} for access (write {\tt 0x2} into {\tt COMMAND} register)
+	\item Write the first number into {\tt DATA} register
+	\item Select the internal register {\tt B} for access (write {\tt 0x4} into {\tt COMMAND} register)
+	\item Write the second number into {\tt DATA} register
+	\item Issue the {\tt ADD} operation (write {\tt 0x1} into {\tt COMMAND} register)
+	\item Read the result from {\tt RESULT} register
+
 \end{itemize}
 \end{frame}
 
 \subsection{Adding a new driver to the NetBSD kernel}
+
+\begin{frame}
+\frametitle{Adding a new driver to the NetBSD kernel}
+\begin{itemize}
+	\item We'll discuss the steps needed to add a new driver to the NetBSD kernel
+	\item TODO
+\end{itemize}
+\end{frame}
 
 \subsection{Matching the PCI device}
 
