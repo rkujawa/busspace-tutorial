@@ -145,6 +145,8 @@ else
 	exit 1
 fi 
 
+echo "BST_REPO=$WORK_DIR/$REPO_BUSSPACE_NAME" >> $ENVTMPFILE
+
 }
 
 build_gxemul() {
@@ -152,7 +154,7 @@ build_gxemul() {
 echo "== Building GXemul, logging to $LOG_GXEMUL"
 
 # Work around build problem on MacOS X 
-if [ `uname` == "Darwin" ] ; then
+if [ ! -z "`uname | grep Darwin`" ] ; then
 	export CXX=g++
 fi
 
@@ -172,19 +174,34 @@ echo "GXEMUL_BINARY=$WORK_DIR/$REPO_GXEMUL_NAME/gxemul-current/gxemul" >> $ENVTM
 
 }
 
-
-if [ -z "$1" ] ; then
+usage() {
 	echo "This script attempts to setup a sane environment for running materials"
 	echo "from EuroBSDcon 2012 bus_space(9) tutorial. Please specify the path to"
 	echo "work directory (it will be created if it does not exist). To start again" 
 	echo "just delete the directory."
 	echo ""
 	echo "usage: $0 path"
+}
+
+lolitsdone() {
+	echo "Your development environment is ready in $WORK_DIR !"
+	echo ""
+	echo "Now you can try running:"
+	echo "scripts/integrate-driver.sh - to integrate the example driver source"
+	echo "	code into the NetBSD source"
+	echo "scripts/netbsd-kernel-rebuild.sh - to rebuld the kernel"
+	echo "scripts/gxemul-start-cobalt.sh - to start the NetBSD/cobalt with newly"
+	echo "	rebuilt kernel"
+	echo ""
+	echo "Have fun!"
+}
+
+if [ -z "$1" ] ; then
+	usage
 	exit 1
 fi 
 
 echo "# work dir $1" >> $ENVTMPFILE
-
 
 prerequisites
 create_workdir
@@ -200,8 +217,9 @@ else
 	echo "-- Problem saving environment settings to $ENVSAVETO"
 fi
 
-
 rm $ENVTMPFILE
+
+lolitsdone
 
 exit 0
 
