@@ -23,6 +23,15 @@ WORK_DIR=$1
 ENVTMPFILE=`mktemp -t environment.conf.XXXXXX`
 ENVSAVETO=$WORK_DIR/$REPO_BUSSPACE_NAME/scripts/environment.conf
 
+rootcheck () {
+
+if [ `id -u` -eq 0 ] ; then
+	echo "Please don't run this script as root!"
+	exit 1
+fi
+
+}
+
 prerequisites () {
 
 which git > /dev/null 2>&1
@@ -203,6 +212,7 @@ fi
 
 echo "# work dir $1" >> $ENVTMPFILE
 
+rootcheck
 prerequisites
 create_workdir
 clone_repos
