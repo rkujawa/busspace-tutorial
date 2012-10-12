@@ -134,6 +134,8 @@ faaopen(dev_t dev, int flags, int mode, struct lwp *l)
 	if (sc->sc_flags & FAA_OPEN) 
 		return EBUSY;
 
+	sc->sc_flags |= FAA_OPEN;
+
 	return 0;
 }
 

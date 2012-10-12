@@ -1,3 +1,35 @@
+%
+% Copyright (c) 2012 The NetBSD Foundation, Inc.
+% All rights reserved.
+%
+% This code is derived from software contributed to The NetBSD Foundation
+% by Radoslaw Kujawa.
+%
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions
+% are met:
+% 1. Redistributions of source code must retain the above copyright
+%    notice, this list of conditions and the following disclaimer.
+% 2. Redistributions in binary form must reproduce the above copyright
+%    notice, this list of conditions and the following disclaimer in the
+%    documentation and/or other materials provided with the distribution.
+%
+% THIS SOFTWARE IS PROVIDED BY THE NETBSD FOUNDATION, INC. AND CONTRIBUTORS
+% ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+% TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+% PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR CONTRIBUTORS
+% BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+% CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+% SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+% INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+% CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+% ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+% POSSIBILITY OF SUCH DAMAGE.
+%
+% Presentation for bus_space(9) tutorial for EuroBSDCon 2012
+%
+% TeX layout based on examples provided by Jean-Yves Migeon
+% 
 \documentclass[dvipsnames,table]{beamer}
 
 \usetheme{Rochester}
@@ -103,7 +135,7 @@ We don't have much time, so several \sout{advanced} topics were omitted:
 	\item Examples for buses other than PCI
 	\item Pretty much everything else...
 \end{itemize}
-However, once you finish this tutorial, you should be able to purse this knowledge yourself.
+However, once you finish this tutorial, you should be able to pursue this knowledge yourself.
 \end{frame}
 
 \subsection{What is a driver anyway?}
@@ -149,7 +181,7 @@ However, once you finish this tutorial, you should be able to purse this knowled
 	\item We'll only cover parts interesting for a device driver programmer
 	\item {\tt src/sys/} - kernel source directory
 	\item {\tt src/sys/dev/} - machine-independent device drivers
-	\item {\tt src/sys/arch/} - port-specific or architecture-specific parts (like low-level system initialisation procedures or machine-dependent drivers)
+	\item {\tt src/sys/arch/} - port-specific or architecture-specific parts (such as the low-level system initialisation procedures or machine-dependent drivers)
 	\item {\tt src/sys/arch/\$PORTNAME/conf/} - kernel configuration files for a given port
 
 \end{itemize}
@@ -270,7 +302,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 	\item Capable of emulating several real machines supported by the NetBSD
 	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus
 	\item I've modified {\tt GXemul} and implemented an emulation of additional PCI device
-	\item It will be used to show (almost) a real-life example of driver development
+	\item It will be used to show (almost) a real-life example of the driver development process
 \end{itemize}
 \end{frame}
 
@@ -397,8 +429,13 @@ Bit & R/W & Description \\
 \begin{frame}
 \frametitle{Adding a new driver to the NetBSD kernel}
 \begin{itemize}
-	\item We'll discuss the steps needed to add a new driver to the NetBSD kernel
-	\item TODO
+	\item We'll discuss the steps needed to add a new MI driver to the NetBSD kernel
+	\begin{itemize}
+		\item Add the vendor and device ID to the database of PCI IDs
+		\item Create a set of the driver source files in {\tt src/sys/dev/\$BUSNAME/ }
+		\item Add the new driver to a {\tt DEVNAMES} file
+		\item Add the new driver to a {\tt src/sys/dev/\$BUSNAME/\$BUSNAME.files} file
+	\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -479,7 +516,7 @@ not configured
 		\item {\tt src/sys/dev/pci/files.pci}
 		\item {\tt src/sys/dev/DEVNAMES}
 	\end{itemize}
-	\item Add the driver to kernel configuration file - {\tt src/sys/arch/\$PORTNAME/conf/GENERIC}
+	\item Add the driver to a port-specific kernel configuration file - {\tt src/sys/arch/\$PORTNAME/conf/GENERIC}
 \end{itemize}
 \end{frame}
 
@@ -743,7 +780,7 @@ faa0 at pci0 dev 12 function 0
 \begin{itemize}
 	\item In a memory-protected environment like the NetBSD one cannot directly access the physical addresses
 	\item The kernel has its own virtual address space
-    \item Physical space can be made visible in kernel virtual address space through process of mapping
+    \item Physical space can be made visible in kernel virtual address space through the process of mapping
     \item It's a machine-dependent process but it's also conveniently hidden from the programmer by bus\_space framework
     \item "Bus space must be mapped before it can be used, and should be unmapped
      when it is no longer needed."
@@ -842,7 +879,7 @@ faa_attach(device_t parent, device_t self, void *aux)
         pci_aprint_devinfo(pa, NULL);
 
         if (pci_mapreg_map(pa, FAA_MMREG_BAR, PCI_MAPREG_TYPE_MEM, 0, &sc->sc_regt, &sc->sc_regh, &sc->sc_reg_pa, 0) != 0 ) {
-            aprint_error_dev(sc->sc_dev, "can't map\n");
+            aprint_error_dev(sc->sc_dev, "can't map the BAR\n");
             return;
         }
 
@@ -1088,6 +1125,7 @@ faa0: just checking: 1 + 2 = 3
 \begin{frame}[fragile]
 \frametitle{Adding cdevsw}
 \begin{itemize}
+	\item The cdevsw is used to decide... TODO
 	\item Not all calls must be implemented, although some device layers define a set of calls that driver must implement
 	\item For example disk drivers must implement open, close, read, write and ioctl
 \end{itemize}
@@ -1109,7 +1147,7 @@ const struct cdevsw faa_cdevsw = {
 \begin{frame}
 \frametitle{Implementing the cdevsw operations}
 \begin{itemize}
-	\item ...
+	\item TODO...
 \end{itemize}
 \end{frame}
 
@@ -1130,6 +1168,7 @@ faaopen(dev_t dev, int flags, int mode, struct lwp *l)
         if (sc->sc_flags & FAA_OPEN)
                 return EBUSY;
 
+        sc->sc_flags |= FAA_OPEN;
         return 0;
 }
 int
@@ -1150,7 +1189,7 @@ faaclose(dev_t dev, int flag, int mode, struct lwp *l)
 \frametitle{ioctls}
 \begin{itemize}
 	\item Structures shared between the kernel and userspace
-	\item Usually {\tt switch} in kernel driver based on cmd number...
+	\item Usually {\tt switch} in kernel driver based on cmd number used to decide which kernel-level function call...
 	\item TODO
 \end{itemize}
 \end{frame}
@@ -1200,7 +1239,7 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 \begin{frame}
 \frametitle{Creating device node}
 \begin{itemize}
-	\item The {\tt mknod} utility can be used...
+	\item The {\tt mknod} utility can be used... TODO
 	\item {\tt mknod name [b | c] [major | driver] minor}
 	\item {\tt mknod /dev/faa0 c faa 0}
 	\item Created successfully
@@ -1210,13 +1249,18 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 \end{itemize}
 \end{frame}
 
-\subsection{An example user space program}
+\subsection{An example of user space program}
 
 \begin{frame}
-\frametitle{An example user space program}
+\frametitle{An example of user space program}
 \begin{itemize}
 	\item Will call the driver through the {\tt ioctl}
-	\item As simple as possible
+	\item As simple as possible, just to show how communication is done
+	\item Using ioctl from the user space
+	\begin{itemize}
+		\item Open the device file with {\tt O\_RDWR}
+		\item Call ioctl(2) with the operation number and structure as parameter
+	\end{itemize}
 \end{itemize}
 \end{frame}
 
@@ -1296,6 +1340,7 @@ faa0: got ioctl with a 3, b 7
 	\item Always free resources allocated in {\tt match} or {\tt probe} function
 	\item Always use {\tt bus\_space} methods, don't access the hardware using pointer dereference!
 	\item If possible test on more than one hardware architecture, some bugs may surface
+	\item TODO: more obvious statements
 \end{itemize}
 \end{frame}
 
@@ -1335,6 +1380,7 @@ faa0: got ioctl with a 3, b 7
 	\item Source code of the drivers:
 	\begin{itemize}
 		\item {\tt tdvfb}, {\tt voodoofb} are fairly good frame buffer driver examples with documentation publicly available.
+		\item TODO: more examples
 	\end{itemize}
 \end{itemize}
 
@@ -1344,7 +1390,7 @@ faa0: got ioctl with a 3, b 7
 \frametitle{Get the source code}
 
 \begin{itemize}
-	\item Download the source code and materials for this tutorial.
+	\item Download the source code and materials for this tutorial
 	\item {\small\url{https://github.com/rkujawa/busspace-eurobsdcon2012}}
 	\item {\small\url{https://github.com/rkujawa/gxemul-eurobsdcon2012}}
 \end{itemize}
