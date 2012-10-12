@@ -169,9 +169,9 @@ However, once you finish this tutorial, you should be able to pursue this knowle
 \frametitle{The NetBSD kernel basics}
 \begin{itemize}
 	\item The NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
-	\item Thanks to above, communication between drivers and other kernel layers is simple
+	\item Thanks to the above, communication between drivers and other kernel layers is simple
 	\item However, it also means that one badly written driver can affect the whole kernel
-	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf} etc.) 
+	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf}, etc.) 
 \end{itemize}
 \end{frame}
 
@@ -251,10 +251,10 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \begin{frame}
 \frametitle{The bus\_space(9) framework}
 \begin{itemize}
-	\item "The goal of the bus\_space functions is to allow a single
+	\item ``The goal of the bus\_space functions is to allow a single
      driver source file to manipulate a set of devices on different system
      architectures, and to allow a single driver object file to manipulate a
-     set of devices on multiple bus types on a single architecture."
+     set of devices on multiple bus types on a single architecture.''
 \end{itemize}
 \end{frame}
 
@@ -269,7 +269,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 		\item Driver for a typical PCI card will be completely MI
 		\item Driver for a SoC components will usually be completely MD
 	\end{itemize}
-	\item The {\tt bus\_space} abstractions helps achieving portability, transparently handling endianness issues and hiding bus implementation details from the device driver
+	\item The {\tt bus\_space} abstractions helps to achieve portability, transparently handling endianness issues and hiding bus implementation details from the device driver
 	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port the NetBSD to a new hardware
 \end{itemize}
 \end{frame}
@@ -301,7 +301,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 	\item A framework for full-system computer architecture emulation, excellent for educational purposes
 	\item Capable of emulating several real machines supported by the NetBSD
 	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus
-	\item I've modified {\tt GXemul} and implemented an emulation of additional PCI device
+	\item I've modified {\tt GXemul} and implemented an emulation of an additional PCI device
 	\item It will be used to show (almost) a real-life example of the driver development process
 \end{itemize}
 \end{frame}
@@ -776,14 +776,14 @@ faa0 at pci0 dev 12 function 0
 \subsection{Mapping the hardware resources}
 
 \begin{frame}
-\frametitle{Why do we need to "map" the resources?}
+\frametitle{Why do we need to ``map'' the resources?}
 \begin{itemize}
 	\item In a memory-protected environment like the NetBSD one cannot directly access the physical addresses
 	\item The kernel has its own virtual address space
     \item Physical space can be made visible in kernel virtual address space through the process of mapping
     \item It's a machine-dependent process but it's also conveniently hidden from the programmer by bus\_space framework
-    \item "Bus space must be mapped before it can be used, and should be unmapped
-     when it is no longer needed."
+    \item ``Bus space must be mapped before it can be used, and should be unmapped
+     when it is no longer needed''
 \end{itemize}
 \end{frame}
 
@@ -1340,6 +1340,7 @@ faa0: got ioctl with a 3, b 7
 	\item Always free resources allocated in {\tt match} or {\tt probe} function
 	\item Always use {\tt bus\_space} methods, don't access the hardware using pointer dereference!
 	\item If possible test on more than one hardware architecture, some bugs may surface
+	\item Don't reinvent the wheel, try to use existing kernel frameworks as much as possible
 	\item TODO: more obvious statements
 \end{itemize}
 \end{frame}
