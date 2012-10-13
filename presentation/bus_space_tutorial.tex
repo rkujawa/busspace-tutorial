@@ -32,7 +32,7 @@
 % TeX layout based on examples provided by Jean-Yves Migeon
 %
 % The following people provided important suggestions and corrections: 
-% Greg Oster, Valery E. Ushakov
+% Greg Oster, Valery E. Ushakov, S.P. Zeidler
 %
 % 
 \documentclass[dvipsnames,table]{beamer}
@@ -120,7 +120,7 @@
 \frametitle{Why was this tutorial created?}
 \begin{itemize}
 	\item Introductory-level documentation is scarce
-	\item Writing the device drivers is often considered black magic
+	\item Writing device drivers is often considered black magic
 	\item Reading the {\tt man} pages won't give you the big picture
 	\item BSD systems are always in need of new drivers
 	\item Device drivers are fun {\Large \smiley}
@@ -134,7 +134,7 @@
 We don't have much time, so several \sout{advanced} topics were omitted:
 \begin{itemize}
 	\item Interrupt handling
-	\item Direct Memory Access and {\tt bus\_dma} framework
+	\item Direct Memory Access and the {\tt bus\_dma} framework
 	\item Power management
 	\item Driver detachment
 	\item Drivers as kernel modules
@@ -149,7 +149,7 @@ However, once you finish this tutorial, you should be able to pursue this knowle
 \begin{frame}
 \frametitle{What is a driver anyway?}
 \begin{itemize}
-	\item Interface between the user space and hardware, implemented as a part of the kernel
+	\item The interface between the user space and hardware, implemented as a part of the kernel
 	\item The NetBSD drivers are written mostly in C
 	\item Sometimes they have machine dependent assembler parts, but this is a rare case
 \end{itemize}
@@ -161,9 +161,9 @@ However, once you finish this tutorial, you should be able to pursue this knowle
 \frametitle{What do you need to write a driver?}
 \begin{itemize}
 	\item C programming skills
-	\item Hardware documentation or ability to reverse engineer the hardware
-	\item Reference driver implementation will help but is not essential
-	\item The NetBSD installation and kernel source or cross-build environment (the latter is usually preferred for development of drivers)
+	\item Hardware documentation or the ability to reverse engineer the hardware
+	\item A reference driver implementation will help but is not essential
+	\item The NetBSD installation and kernel source or a cross-build environment (the latter is usually preferred for development of drivers)
 	\item A lot of time, coffee and patience {\Large \smiley}
 \end{itemize}
 \end{frame}
@@ -191,7 +191,7 @@ However, once you finish this tutorial, you should be able to pursue this knowle
 \begin{frame}
 \frametitle{The NetBSD kernel basics}
 \begin{itemize}
-	\item The NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
+	\item NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
 	\item Thanks to the above, communication between drivers and other kernel layers is simple
 	\item However, it also means that one badly written driver can affect the whole kernel
 	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf}, etc.) 
@@ -217,11 +217,11 @@ However, once you finish this tutorial, you should be able to pursue this knowle
 \begin{itemize}
 	\item Autoconfiguration is the process of matching hardware devices with an
      appropriate device driver
-    \item Kernel message buffer (dmesg) contains information about autoconfiguration of devices
+    \item The kernel message buffer (dmesg) contains information about autoconfiguration of devices
     \item {\tt driver0 at bus0: Foo hardware} 
     \begin{itemize}
-    	\item Instance 0 of the driver has attached to instance 0 of particular bus
-		\item Such message often carries additional bus-specific information about exact location of the device (like device and function number on the PCI bus)
+    	\item Instance 0 of the driver has attached to instance 0 of the particular bus
+		\item Such messages often carry additional bus-specific information about the exact location of the device (like the device and function number on the PCI bus)
 	\end{itemize}
     \item {\tt driver0: some message}
     \begin{itemize}
@@ -279,7 +279,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
      architectures, and to allow a single driver object file to manipulate a
      set of devices on multiple bus types on a single architecture.''
      \item Provides a set of functions implementing common operations on the bus like mapping, reading, writing, copying, etc.
-     \item The {\tt bus\_space(9)} is implemented on a machine-dependent level (typically it's a part of architecture-specific code), but all implementations present the same interface\footnote{At least they should, some functions are missing on less popular ports}
+     \item The {\tt bus\_space(9)} is implemented at the machine-dependent level (typically it's a part of architecture-specific code), but all implementations present the same interface\footnote{At least they should, some functions are missing on less popular ports}
 \end{itemize}
 \end{frame}
 
@@ -288,14 +288,14 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 
 \begin{itemize}
 	\item If possible drivers should work on any hardware platform
-	\item High quality, machine-independent (MI) drivers are an important factor that adds to the NetBSD portability
+	\item High quality, machine-independent (MI) drivers are an important factor that adds to NetBSD portability
 	\item Some drivers are completely MI, some have MD or bus dependent attachments and some are completely MD
 	\begin{itemize}
-		\item Driver for a typical PCI card will be completely MI
-		\item Driver for a SoC components will usually be completely MD
+		\item A driver for a typical PCI card will be completely MI
+		\item A driver for the components of a SoC will usually be completely MD
 	\end{itemize}
-	\item The {\tt bus\_space} abstractions helps to achieve portability, transparently handling endianness issues and hiding bus implementation details from the device driver
-	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port the NetBSD to a new hardware
+	\item The {\tt bus\_space} abstraction helps to achieve portability, transparently handling endianness issues and hiding bus implementation details from the device driver
+	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port NetBSD to new hardware
 \end{itemize}
 \end{frame}
 
@@ -313,9 +313,9 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 	\item Described in \href{http://www.netbsd.org/docs/guide/en/part-compile.html}{Part V of the NetBSD Guide}
 	\item Check out the NetBSD sources
 	\item {\tt \$ build.sh -m cobalt tools} will build compiler, assembler, linker, etc. for cobalt port
-	\item {\tt \$ build.sh -m cobalt kernel=GENERIC} will build GENERIC kernel for cobalt
-	\item Pass {\tt -u} parameter to {\tt build.sh} to update (won't rebuilding everything)
-	\item The {\tt build.sh} is calling {\tt nbconfig} and {\tt nbmake} tools, no magic involved
+	\item {\tt \$ build.sh -m cobalt kernel=GENERIC} will build the GENERIC kernel for cobalt
+	\item Call {\tt build.sh} with a {\tt -u} parameter to update (won't rebuilding everything)
+	\item {\tt build.sh} is calling {\tt nbconfig} and {\tt nbmake} tools, no magic involved
 \end{itemize}
 \end{frame}
 
@@ -325,7 +325,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \frametitle{Quick introduction to {\tt GXemul}}
 \begin{itemize}
 	\item A framework for full-system computer architecture emulation, excellent for educational purposes
-	\item Capable of emulating several real machines supported by the NetBSD
+	\item Capable of emulating several real machines supported by NetBSD
 	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus
 	\item I've modified {\tt GXemul} and implemented an emulation of an additional PCI device
 	\item It will be used to show (almost) a real-life example of the driver development process
@@ -339,7 +339,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \begin{itemize}
 	\item Business applications often use arithmetic operations like addition
 	\item Fake Cards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
-	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for the NetBSD!
+	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for NetBSD!
 \end{itemize}
 \end{frame}
 
@@ -475,12 +475,12 @@ processor, revision 0x01) at pci0 dev 12 function 0
 not configured
 \end{verbatim}
 \begin{itemize}
-	\item Kernel does not know anything about this vendor and device
-	\item Add it to PCI device database - {\tt src/sys/dev/pci/pcidevs}
+	\item The kernel does not know anything about this vendor and device
+	\item Add it to the PCI device database - {\tt src/sys/dev/pci/pcidevs}
 	\item {\tt vendor VENDORNAME 0xVENDORID Long Vendor Name}
 	\item {\tt product VENDORNAME PRODUCTNAME 0xPRODUCTID	Long Product Name}
 	\item To regenerate pcidevs*.h run {\tt awk -f devlist2h.awk pcidevs} or
-{\tt Makefile.pcidevs} if you're on the NetBSD
+{\tt Makefile.pcidevs} if you're on NetBSD
 \end{itemize}
 \end{frame}
 
@@ -534,7 +534,7 @@ not configured
 	\item Create a set of new files in {\tt src/sys/dev/pci}
 	\begin{itemize}
 		\item {\tt faa.c} - main driver code
-		\item {\tt faareg.h} - register definitions\footnote{Might not exist if the driver is only a simple passthrough from specific bus to other MI driver.}
+		\item {\tt faareg.h} - register definitions\footnote{Might not exist if the driver is only a simple passthrough from a specific bus to another MI driver.}
 		\item {\tt faavar.h} - driver structures and functions used in other parts of the kernel\footnote{Omitted if not needed.}
 	\end{itemize}
 	\item Modify driver definitions
@@ -551,12 +551,12 @@ not configured
 \begin{itemize}
 	\item Kernel includes are at the beginning, followed by machine-specific and bus-specific includes
 	\item Should also include {\tt faareg.h} and {\tt faavar.h} files
-	\item Minimal driver needs just two functions
+	\item A minimal driver needs just two functions
 	\begin{itemize}
 		\item {\tt faa\_match} (or {\tt faa\_probe} for some buses)
 		\item {\tt faa\_attach}
 	\end{itemize}
-	\item {\tt CFATTACH\_DECL\_NEW} macro plugs above functions into {\tt autoconf(9)} mechanism
+	\item The {\tt CFATTACH\_DECL\_NEW} macro plugs the above functions into {\tt autoconf(9)} mechanism
 \end{itemize}
 \end{frame}
 
@@ -568,7 +568,7 @@ not configured
 		\item Check if the driver should attach to a given device (for example in case of PCI bus, it will be used to check vendor and product ID)
 		\item {\tt parent} - pointer to parent's driver device structure
 		\item {\tt match} - pointer to {\tt autoconf(9)} details structure
-		\item {\tt aux} - despite the name most important argument, usually contains bus-specific structure describing device details
+		\item {\tt aux} - despite the name the most important argument, usually contains bus-specific structure describing device details
 	\end{itemize}
 	\item {\tt static void faa\_attach(device\_t parent, device\_t self, void *aux);}
 	\begin{itemize}
@@ -731,9 +731,9 @@ struct faa_softc {
 \end{verbatim}
 \normalsize
 \begin{itemize}
-	\item Above definition means that an instance of {\tt faa} may be attached to any PCI bus, any device, any function
-	\item Exact position of rule in the configuration file is not important in this case
-	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+5+NetBSD-current}{config(5)} for description of device definition language
+	\item The above definition means that an instance of {\tt faa} may be attached to any PCI bus, any device, any function
+	\item The exact position of rule in the configuration file is not important in this case
+	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+5+NetBSD-current}{config(5)} for a description of the device definition language
 \end{itemize}
 \end{frame}
 
@@ -741,10 +741,8 @@ struct faa_softc {
 \frametitle{Adding the new PCI driver - example}
 \begin{itemize}
 	\item The driver should compile now
-	\item Driver's match function will check if the driver is able to work with given
- device
+	\item The drivers match function will check if the driver is able to work with a given device
  	\item Since it is not implemented, the kernel will not attach the driver
-
 \end{itemize}
 \end{frame}
 
