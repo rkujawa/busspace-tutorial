@@ -45,7 +45,7 @@ static void	faa_attach(device_t, device_t, void *);
 static bool	faa_check(struct faa_softc *sc);
 static uint32_t	faa_add(struct faa_softc *sc, uint32_t a, uint32_t b);
 
-static void	faaioctl_add(struct faa_softc *sc, struct faaio_add *data);
+static int	faaioctl_add(struct faa_softc *sc, struct faaio_add *data);
 
 dev_type_open(faaopen);
 dev_type_close(faaclose);
@@ -161,8 +161,8 @@ faaioctl(dev_t dev, u_long cmd, void *data, int flag, struct lwp *l)
 
 	switch (cmd) {
 	case FAAIO_ADD:
-		faaioctl_add(sc, (struct faaio_add *) data);
-		return 0;
+		err = faaioctl_add(sc, (struct faaio_add *) data);
+		break;	
 	default:
 		err = EINVAL;
 		break;
@@ -170,12 +170,18 @@ faaioctl(dev_t dev, u_long cmd, void *data, int flag, struct lwp *l)
 	return(err);
 }
 
-static void
+static int 
 faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 {
+	uint32_t result;
+	int err;
+
 	aprint_normal_dev(sc->sc_dev, "got ioctl with a %d, b %d\n",
 	    data->a, data->b);
 
-	*(data->result) = faa_add(sc, data->a, data->b);
+	result = faa_add(sc, data->a, data->b);	
+
+	err = copyout(&result, data->result, sizeof(uint32_t));
+	return err;
 }
 

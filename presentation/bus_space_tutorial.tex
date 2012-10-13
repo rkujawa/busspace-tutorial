@@ -26,9 +26,14 @@
 % ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 % POSSIBILITY OF SUCH DAMAGE.
 %
+%
 % Presentation for bus_space(9) tutorial for EuroBSDCon 2012
 %
 % TeX layout based on examples provided by Jean-Yves Migeon
+%
+% The following people provided suggestions and corrections: 
+% Greg Oster, Valery E. Ushakov
+%
 % 
 \documentclass[dvipsnames,table]{beamer}
 
@@ -40,6 +45,7 @@
 \usepackage[utf8x]{inputenc}
 \usepackage{wasysym}
 \usepackage[normalem]{ulem}
+\usepackage{amsmath}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{caption}[numbered]
@@ -569,8 +575,9 @@ not configured
 		\item detach TODO
 		\item activate TODO
 	\end{itemize}
-	\item \_NEW name is not fortunate
-	\item This variant was introduced recently and isn't documented well
+	\item The ``\_NEW'' name is not fortunate
+%	XXX: when was it added? still not present in manuals
+%	\item This variant was introduced recently and isn't documented well
 \end{itemize}
 \end{frame}
 
@@ -708,7 +715,7 @@ struct faa_softc {
 \begin{itemize}
 	\item Above definition means that an instance of {\tt faa} may be attached to any PCI bus, any device, any function
 	\item Exact position of rule in the configuration file is not important in this case
-	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+9+NetBSD-current}{config(9)} for description of device definition language
+	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+5+NetBSD-current}{config(5)} for description of device definition language
 \end{itemize}
 \end{frame}
 
@@ -1014,9 +1021,9 @@ faa0: registers at 0x10110000
 \begin{lstlisting}
 #define FAA_STATUS              0x0
 #define FAA_COMMAND             0x4
-#define FAA_COMMAND_ADD         __BIT(0)        
-#define FAA_COMMAND_STORE_A     __BIT(1)
-#define FAA_COMMAND_STORE_B     __BIT(2)
+#define FAA_COMMAND_ADD             __BIT(0)        
+#define FAA_COMMAND_STORE_A         __BIT(1)
+#define FAA_COMMAND_STORE_B         __BIT(2)
 #define FAA_DATA                0x8
 #define FAA_RESULT              0xC
 \end{lstlisting}
@@ -1094,9 +1101,9 @@ faa0: just checking: 1 + 2 = 3
 \frametitle{Device files}
 \begin{itemize}
 	\scriptsize
-	\item {\tt crw-r-----  1 root  wheel  88, 2 Aug 12 21:53 /dev/file}
+	\item {\tt crw-r-----  1 root  wheel  101, 1 Aug 12 21:53 /dev/file}
 	\normalsize
-	\item Kernel identifies which driver should service the request to this file by using major and minor numbers (88 and 2 in the example above)
+	\item Kernel identifies which driver should service the request to this file by using major and minor numbers (101 and 1 in the example above)
 	\item Major number identifies the driver
 	\item Minor number usually identifies the driver instance, although the driver is free to use it in any other way
 	\item In the NetBSD device files are created statically
@@ -1148,6 +1155,8 @@ const struct cdevsw faa_cdevsw = {
 \frametitle{Implementing the cdevsw operations}
 \begin{itemize}
 	\item TODO...
+	\item ... for character devices
+	\item There's also bdevsw for block devices, but we won't use it in this example
 \end{itemize}
 \end{frame}
 
@@ -1185,14 +1194,28 @@ faaclose(dev_t dev, int flag, int mode, struct lwp *l)
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{ioctls}
 \begin{itemize}
-	\item Structures shared between the kernel and userspace
-	\item Usually {\tt switch} in kernel driver based on cmd number used to decide which kernel-level function call...
-	\item TODO
+	\item The {\tt ioctl(2)} can be used to call kernel-level functions and pass data between the kernel and userspace
+	\item The classic way of passing the data is using structs, their definitions are shared between the kernel and userspace code
+	\item TODO: Usually {\tt switch} in kernel driver based on cmd number used to decide which kernel-level function call...
+	\item {\tt faaio.h}
 \end{itemize}
+\begin{lstlisting}
+#include <sys/ioccom.h>
+
+#define FAAIO_ADD	_IOWR('W', 1, struct faaio_add)
+
+struct faaio_add {
+    uint32_t a;
+    uint32_t b;
+    uint32_t *result;
+};
+\end{lstlisting}
 \end{frame}
+
+
 
 \begin{frame}[fragile]
 \frametitle{Implemeting the cdevsw operations - ioctl}
@@ -1208,23 +1231,38 @@ faaioctl(dev_t dev, u_long cmd, void *data, int flag, struct lwp *l)
 
         switch (cmd) {
         case FAAIO_ADD:
-                faaioctl_add(sc, (struct faaio_add *) data);
-                return 0;
+                err = faaioctl_add(sc, (struct faaio_add *) data);
+                break;
         default:
                 err = EINVAL;
                 break;
         }
         return(err);
 }
-static void
+static int
 faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 {
+        uint32_t result; int err;
+
         aprint_normal_dev(sc->sc_dev, "got ioctl with a %d, b %d\n",
             data->a, data->b);
 
-        *(data->result) = faa_add(sc, data->a, data->b);
+        result = faa_add(sc, data->a, data->b);
+        err = copyout(&result, data->result, sizeof(uint32_t));
+        return err;
 }
 \end{lstlisting}
+\end{frame}
+
+\begin{frame}
+\frametitle{Using {\tt copyout} to pass the data to user space}
+\begin{itemize}
+	\item The {\tt copy(9)} functions are used to copy kernel space data from/to user space
+	\item {\tt copyout(kernel\_address, userspace\_address, size);}
+	\item Actually on Cobalt we could just do {\tt *data->result = faa\_add();} instead of calling the {\tt copyout} function, but that is a bad idea
+	\item Some architectures (such as {\tt sparc64}) have totally separate kernel and user address spaces $ \implies $ user space addresses are meaningless in the kernel
+
+\end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -1239,7 +1277,8 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 \begin{frame}
 \frametitle{Creating device node}
 \begin{itemize}
-	\item The {\tt mknod} utility can be used... TODO
+	\item The {\tt mknod} utility can be used to create the device file manually
+	\item Driver name can be specified instead of major number - it will be automatically resolved into correct major number
 	\item {\tt mknod name [b | c] [major | driver] minor}
 	\item {\tt mknod /dev/faa0 c faa 0}
 	\item Created successfully
@@ -1265,7 +1304,7 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{An example user space program - source}
+\frametitle{An example of user space program - source}
 \begin{lstlisting}
 void add(int, uint32_t, uint32_t);
 
@@ -1294,7 +1333,7 @@ main(int argc, char *argv[])
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{An example user space program - source}
+\frametitle{An example of user space program - source}
 \begin{lstlisting}
 void
 add(int devfd, uint32_t a, uint32_t b)
@@ -1315,7 +1354,7 @@ add(int devfd, uint32_t a, uint32_t b)
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{An example user space program - running it}
+\frametitle{An example of user space program - running it}
 \begin{verbatim}
 # make
 cc -o aaa_add aaa_add.c
@@ -1341,6 +1380,7 @@ faa0: got ioctl with a 3, b 7
 	\item Always use {\tt bus\_space} methods, don't access the hardware using pointer dereference!
 	\item If possible test on more than one hardware architecture, some bugs may surface
 	\item Don't reinvent the wheel, try to use existing kernel frameworks as much as possible
+	\item Don't do what I did without copyout
 	\item TODO: more obvious statements
 \end{itemize}
 \end{frame}
