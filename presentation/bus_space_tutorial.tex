@@ -1148,7 +1148,7 @@ faa0: just checking: 1 + 2 = 3
 	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)}
 	\item and more\dots
 	\item Any mix of the above system calls might be used to interface between the kernel and userspace
-	\item We'll later implement ioctl(2)-based communication mechanism
+	\item We'll later implement {\tt ioctl(2)}-based communication mechanism
 
 \end{itemize}
 \end{frame}
@@ -1156,7 +1156,7 @@ faa0: just checking: 1 + 2 = 3
 \begin{frame}[fragile]
 \frametitle{Adding cdevsw}
 \begin{itemize}
-	\item The cdevsw is used to decide which operation on the device file calls which driver function
+	\item The cdevsw is used to decide which operation on the character device file calls which driver function
 	\item Not all calls must be implemented, although some device layers define a set of calls that driver must implement
 	\item For example disk drivers must implement open, close, read, write and ioctl
 \end{itemize}
@@ -1176,13 +1176,12 @@ const struct cdevsw faa_cdevsw = {
 \end{frame}
 
 \begin{frame}
-\frametitle{Implementing the {\tt cdevsw} operations}
+\frametitle{Prototyping the {\tt cdevsw} operations}
 \begin{itemize}
-	\item TODO...
-	\item ... for character devices
-	\item Pass {\tt no} followed by a function name if it is not implemented  
-	\item There's also bdevsw for block devices, but we won't use it in this example
-	\item Last member of cdevsw 
+	\item The {\tt dev\_type*} macros are used to prototype the functions passed to {\tt cdevsw}
+	\item Pass {\tt no} followed by a function name to appropriate {\tt cdevsw} field if it is not implemented  
+	\item There's also {\tt bdevsw} for block devices, but we won't use it in this example
+	\item Last member of {\tt cdevsw} structure defines the device flags, originally it was used to define the device type (still used for disks, tape drives and ttys, for other devices pass {\tt D\_OTHER})
 \end{itemize}
 \end{frame}
 
@@ -1220,18 +1219,32 @@ faaclose(dev_t dev, int flag, int mode, struct lwp *l)
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}[fragile]
-\frametitle{ioctls}
+\begin{frame}
+\frametitle{Defining the {\tt ioctl}s}
 \begin{itemize}
-	\item The {\tt ioctl(2)} can be used to call kernel-level functions and pass data between the kernel and userspace
-	\item The classic way of passing the data is using structs, their definitions are shared between the kernel and userspace code
-	\item TODO: Usually {\tt switch} in kernel driver based on cmd number used to decide which kernel-level function call...
-	\item {\tt faaio.h}
+	\item The {\tt ioctl(2)} can be used to call kernel-level functions and exchange the data between the kernel and userspace
+	\item The classic way of passing the data is using structures, their definitions are shared between the kernel and userspace code
+	\item The driver might support more than one {\tt ioctl}, the {\tt \_IO*} macros are used to define the operation and associated structure used to exchange the data
+	\begin{itemize}
+		\item {\tt \_IO} - just a kernel function call, no data exchange
+		\item {\tt \_IOR} - kernel function call and data pass from kernel to user space
+		\item {\tt \_IOW} - kernel function call and data pass from user space to kernel
+		\item {\tt \_IOWR} - kernel function call and data exchange in both directions
+		\item {\tt \#define DRIVERIO\_IOCTLNAME	\_IOXXX(group, ioctl\_number, data structure)}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Defining the {\tt ioctl}s}
+\begin{itemize}
+\item {\tt src/sys/dev/pci/faaio.h}
 \end{itemize}
 \begin{lstlisting}
 #include <sys/ioccom.h>
-
-#define FAAIO_ADD	_IOWR('W', 1, struct faaio_add)
+                     
+#define FAAIO_ADD	_IOWR(0, 1, struct faaio_add)
 
 struct faaio_add {
     uint32_t a;
@@ -1239,12 +1252,14 @@ struct faaio_add {
     uint32_t *result;
 };
 \end{lstlisting}
+\begin{itemize}
+	\item In the above example {\tt ioctl} group is not defined ({\tt0}), but a single letter identifier could appear as first argument to {\tt\_IOWR}
+% mention that group numbers aren't defined in any single list, you have to grep the tree for _IO* definitions
+\end{itemize}
 \end{frame}
 
-
-
 \begin{frame}[fragile]
-\frametitle{Implemeting the cdevsw operations - ioctl}
+\frametitle{Implemeting the cdevsw operations - {\tt ioctl}}
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faa.c}
 \end{itemize}
@@ -1448,7 +1463,7 @@ faa0: got ioctl with a 3, b 7
 	\item Source code of the drivers:
 	\begin{itemize}
 		\item {\tt tdvfb}, {\tt voodoofb} are fairly good frame buffer driver examples with documentation publicly available.
-		\item TODO: more examples
+		\item {\tt etsec} is a nice example of more complicated network interface driver
 	\end{itemize}
 \end{itemize}
 

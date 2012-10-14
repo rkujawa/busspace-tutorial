@@ -3,7 +3,7 @@
 
 #include <sys/ioccom.h>
 
-#define FAAIO_ADD	_IOWR('W', 1, struct faaio_add)
+#define FAAIO_ADD	_IOWR(0, 1, struct faaio_add)
 
 struct faaio_add {
 	uint32_t a;
