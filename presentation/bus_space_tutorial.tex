@@ -46,6 +46,7 @@
 \usepackage{wasysym}
 \usepackage[normalem]{ulem}
 \usepackage{amsmath}
+\usepackage{hyperref}
 
 \setbeamertemplate{navigation symbols}{}
 \setbeamertemplate{caption}[numbered]
@@ -70,6 +71,8 @@
 
 \setbeamercolor{section number projected}{fg=white,bg=NetBSD-orange}
 \setbeamercolor{subsection number projected}{fg=white,bg=NetBSD-orange}
+\setbeamercolor{button}{bg=NetBSD-orange,fg=white}
+
 \setbeamertemplate{section in toc}[circle]
 \setbeamertemplate{subsection in toc}[square]
 
@@ -363,6 +366,7 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \end{frame}
 
 \begin{frame}
+\label{faaop}
 \frametitle{Our hardware - technical details (memory mapped register set)}
 \scriptsize
 \begin{itemize}
@@ -590,7 +594,7 @@ not configured
 	\begin{itemize}
 		\item driver name
 		\item size of softc structure containing state of driver's instance
-		\item match/probe function ... TODO more about these funcs
+		\item match/probe function
 		\item attach function
 		\item detach function
 		\item activate function
@@ -599,6 +603,7 @@ not configured
 %	XXX: when was it added? still not present in manuals
 %	\item This variant was introduced recently and isn't documented well
 	\item Pass {\tt NULL} for unimplemented functions
+	\item We won't cover {\tt detach} and {\tt activate} now, as they are not needed for a simple driver
 \end{itemize}
 \end{frame}
 
@@ -962,7 +967,7 @@ Data & Read function & Write function \\
 \begin{lstlisting}
 #define FAA_DATA                0x8
 #define FAA_COMMAND             0x4
-#define FAA_COMMAND_STORE_A     __BIT(1)
+#define FAA_COMMAND_STORE_A         __BIT(1)
 \end{lstlisting}
 \begin{itemize}
 	\item Define the new function in main driver code
@@ -1025,10 +1030,9 @@ faa0: registers at 0x10110000
 \begin{frame}
 \frametitle{Implementing addition using the hardware}
 \begin{itemize}
-	\item Algorithm... TODO
-	\item Basic principle of device operation is usually laid out in the data sheet
-	
-	\item Writing such algorithm is often not needed, since the NetBSD kernel already has frameworks for common device types (such as hard disk controllers, frame buffers, etc.)
+	\item Basic principle of device operation should be laid out in the data sheet	
+	\item We need to implement an algorithm based on this description \hyperlink{faaop}{\beamergotobutton{Jump to device description}}
+	\item Writing such algorithm is often not needed, since the NetBSD kernel already has frameworks for common device types (such as {\tt atabus/wd} for IDE and SATA hard disk controllers, {\tt wsdisplay/wscons} for frame buffers, etc.)
 \end{itemize}
 \end{frame}
 
@@ -1172,11 +1176,13 @@ const struct cdevsw faa_cdevsw = {
 \end{frame}
 
 \begin{frame}
-\frametitle{Implementing the cdevsw operations}
+\frametitle{Implementing the {\tt cdevsw} operations}
 \begin{itemize}
 	\item TODO...
 	\item ... for character devices
+	\item Pass {\tt no} followed by a function name if it is not implemented  
 	\item There's also bdevsw for block devices, but we won't use it in this example
+	\item Last member of cdevsw 
 \end{itemize}
 \end{frame}
 
