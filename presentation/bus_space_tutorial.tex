@@ -811,7 +811,7 @@ faa0 at pci0 dev 12 function 0
 	\item The kernel has its own virtual address space
 	\item Physical space can be made visible in kernel virtual address space through the process of mapping
 	\item It's a machine-dependent process but it's also conveniently hidden from the programmer by the bus\_space framework
-	\item ``The bus space must be mapped before it can be used, and should be unmapped
+	\item ``The bus space must be mapped before it can be used, and should be unmapped       when it is no longer needed''
 \end{itemize}
 \end{frame}
 
@@ -1154,7 +1154,7 @@ faa0: just checking: 1 + 2 = 3
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Adding cdevsw}
+\frametitle{Adding {\tt cdevsw}}
 \begin{itemize}
 	\item {\tt cdevsw} is used to decide which operation on the character device file calls which driver function
 	\item Not all calls have to be implemented, although some device layers define a set of calls that a driver must implement
@@ -1186,7 +1186,7 @@ const struct cdevsw faa_cdevsw = {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Implemeting the cdevsw operations - open / close}
+\frametitle{Implemeting the {\tt cdevsw} operations - open / close}
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faa.c}
 \end{itemize}
@@ -1259,7 +1259,7 @@ struct faaio_add {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Implemeting the cdevsw operations - {\tt ioctl}}
+\frametitle{Implemeting the {\tt cdevsw} operations - {\tt ioctl}}
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faa.c}
 \end{itemize}
