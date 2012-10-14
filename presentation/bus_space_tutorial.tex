@@ -1338,7 +1338,7 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 \begin{itemize}
 	\item The example program will open the device file and call {\tt ioctl(2)} on it
 	\item As simple as possible, just to show how communication is done
-	\item Using ioctls from the user space
+	\item Using {\tt ioctl}s from the user space
 	\begin{itemize}
 		\item Open the device file with {\tt O\_RDWR}
 		\item Call {\tt ioctl(2)} with the operation number and structure as parameter
@@ -1455,15 +1455,20 @@ faa0: got ioctl with a 3, b 7
 \begin{itemize}
 	\item Documentation, articles:
 	\begin{itemize}
-		\item A Machine-Independent DMA Framework for NetBSD, Jason R. Thorpe
-		\item Writing Drivers for NetBSD, Jochen Kunz
-		\item NetBSD Documentation: Writing a pseudo device
-		\item autoconf(9), bus\_space(9), bus\_dma(9), driver(9), pci(9) {\tt man} pages, etc.
+		\item \href{http://www.netbsd.org/docs/kernel/bus_dma.pdf}{A Machine-Independent DMA Framework for NetBSD, Jason R. Thorpe}
+		\item \href{ftp://ftp.netbsd.org/pub/NetBSD/misc/ddwg/NetBSD-driver_writing-1.0.1e.pdf}{Writing Drivers for NetBSD, Jochen Kunz}
+		\item \href{http://www.netbsd.org/docs/kernel/pseudo/}{NetBSD Documentation: Writing a pseudo device}
+		\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?autoconf+9+NetBSD-current}{autoconf(9)}, 
+			\href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_space+9+NetBSD-current}{bus\_space(9)}
+			\href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_dma+9+NetBSD-current}{bus\_dma(9)} 
+			\href{http://netbsd.gw.com/cgi-bin/man-cgi?driver+9+NetBSD-current}{driver(9)}, 
+			\href{http://netbsd.gw.com/cgi-bin/man-cgi?pci+9+NetBSD-current}{pci(9)}
+			{\tt man} pages, etc.
 	\end{itemize}
 	\item Source code of the drivers:
 	\begin{itemize}
 		\item {\tt tdvfb}, {\tt voodoofb} are fairly good frame buffer driver examples with documentation publicly available.
-		\item {\tt etsec} is a nice example of more complicated network interface driver
+		\item {\tt etsec} is a nice example of a more complicated network interface driver
 	\end{itemize}
 \end{itemize}
 
