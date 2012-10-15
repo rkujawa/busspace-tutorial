@@ -76,6 +76,7 @@
 \setbeamertemplate{section in toc}[circle]
 \setbeamertemplate{subsection in toc}[square]
 
+
 \definecolor{NetBSD-orange}{RGB}{242,103,17}
 \definecolor{NetBSD-orange2}{RGB}{177,76,12}
 \hypersetup{colorlinks=true,linkcolor=white,urlcolor=NetBSD-orange}
@@ -95,6 +96,16 @@
    commentstyle=\color{NetBSD-orange}
 }
 
+\AtBeginSection[]{
+%\begin{frame}
+%\begin{center}
+%\Huge fooo \insertsection
+%\end{center}
+%\end{frame}
+\frame{\sectionpage}
+
+}
+
 \title{Writing NetBSD drivers\\with the bus\_space(9) framework}
 
 \author{Radoslaw Kujawa -- rkujawa@NetBSD.org}
@@ -102,8 +113,6 @@
 \institute{The NetBSD Foundation}
 
 \begin{document}
-
-\section{Introduction}
 
 \begin{frame}
 \titlepage
@@ -116,6 +125,8 @@
 \tableofcontents
 }
 \end{frame}
+
+\section{Introduction}
 
 \subsection{Why was this tutorial created?}
 
