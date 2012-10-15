@@ -7,7 +7,7 @@
 
 GXEMUL_FLAGS="-x -E cobalt"
 
-if [ "$1" == "-n" ] ; then
+if [ ! -z "`echo $1 | grep '-n'`" ] ; then
 	$GXEMUL_BINARY $GXEMUL_FLAGS $NETBSD_KERNEL 
 else
 	$GXEMUL_BINARY $GXEMUL_FLAGS -d $NETBSD_FS_IMG $NETBSD_KERNEL 
