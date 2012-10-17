@@ -175,7 +175,7 @@ However, once you finish this tutorial, you should be able to pursue this knowle
 \frametitle{What do you need to write a driver?}
 \begin{itemize}
 	\item C programming skills
-	\item Hardware documentation or the ability to reverse engineer the hardware
+	\item Hardware documentation (or the ability to reverse engineer the hardware)
 	\item A reference driver implementation will help but is not essential
 	\item A NetBSD installation and kernel source, or a cross-build environment (the latter is usually preferred for development of drivers)
 	\item A lot of time, coffee and patience {\Large \smiley}
@@ -474,8 +474,8 @@ Bit & R/W & Description \\
 	\begin{itemize}
 		\item Add the vendor and device ID to the database of PCI IDs
 		\item Create a set of the driver source files in {\tt src/sys/dev/\$BUSNAME/ }
-		\item Add the new driver to a {\tt DEVNAMES} file
-		\item Add the new driver to a {\tt src/sys/dev/\$BUSNAME/\$BUSNAME.files} file
+		\item Add the new driver to {\tt src/sys/dev/\$BUSNAME/\$BUSNAME.files} file
+		\item Add the new driver to {\tt DEVNAMES}\footnote{Required if you are NetBSD developer, optional otherwise.} file
 	\end{itemize}
 \end{itemize}
 \end{frame}
@@ -557,7 +557,7 @@ not configured
 		\item {\tt src/sys/dev/pci/files.pci}
 		\item {\tt src/sys/dev/DEVNAMES}
 	\end{itemize}
-	\item Add the driver to a port-specific kernel configuration file - {\tt src/sys/arch/\$PORTNAME/conf/GENERIC}
+	\item Configure the kernel to use the newly added driver - {\tt src/sys/arch/\$PORTNAME/conf/GENERIC}
 \end{itemize}
 \end{frame}
 
@@ -610,7 +610,7 @@ not configured
 		\item detach function
 		\item activate function
 	\end{itemize}
-	\item The ``\_NEW'' name is not fortunate
+	\item The ``\_NEW'' name is unfortunate
 %	XXX: when was it added? still not present in manuals
 %      2007/09/24 .. not exactly recently (nag joerg about lack of docs)
 %	\item This variant was introduced recently and isn't documented well
@@ -686,7 +686,7 @@ struct faa_softc {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Adding the new PCI driver - registering the driver}
+\frametitle{Adding the new PCI driver - registering the driver (courtesy)}
 \scriptsize
 \begin{itemize}
 	\item {\tt src/sys/dev/DEVNAMES}
@@ -709,6 +709,7 @@ struct faa_softc {
 \frametitle{Adding the new PCI driver - registering the driver}
 \scriptsize
 \begin{itemize}
+	\item See {\tt config(5)}
 	\item {\tt src/sys/dev/pci/files.pci}
 \end{itemize}
 \begin{verbatim}
@@ -794,7 +795,7 @@ faa0 at pci0 dev 12 function 0
 \end{verbatim}
 \begin{itemize}
 	\item The driver has successfully matched and attached to the PCI device but still is not doing anything useful
-	\item Let's fill an attach function and actually program the hardware
+	\item Let's fill the attach function and actually program the hardware
 \end{itemize}
 \end{frame}
 
@@ -818,11 +819,13 @@ faa0 at pci0 dev 12 function 0
 \begin{frame}
 \frametitle{Why do we need to ``map'' the resources?}
 \begin{itemize}
-	\item In a memory-protected environment like NetBSD one cannot directly access physical addresses
-	\item The kernel has its own virtual address space
-	\item Physical space can be made visible in kernel virtual address space through the process of mapping
-	\item It's a machine-dependent process but it's also conveniently hidden from the programmer by the bus\_space framework
+\huge
 	\item ``The bus space must be mapped before it can be used, and should be unmapped       when it is no longer needed''
+%	\item The kernel has its own virtual address space
+%	\item Physical space can be made visible in kernel virtual address space through the process of mapping
+\normalsize
+	\item It's a machine-dependent process but it's also conveniently hidden from the programmer by the bus\_space framework
+
 \end{itemize}
 \end{frame}
 
@@ -1159,7 +1162,7 @@ faa0: just checking: 1 + 2 = 3
 	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)}
 	\item and more\dots
 	\item Any mix of the above system calls might be used to interface between the kernel and user space
-	\item We'll later implement an {\tt ioctl(2)}-based communication mechanism
+	\item We'll implement an {\tt ioctl(2)}-based communication mechanism
 
 \end{itemize}
 \end{frame}
