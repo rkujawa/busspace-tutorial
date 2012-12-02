@@ -6,7 +6,7 @@
 # XXX
 # BST_REPO=~/repos/busspace-eurobsdcon2012
 
-DRIVER_DIR=$BST_REPO/driver/src
+DRIVER_DIR=$BST_REPO/driver-faa/src
 
 if [ -z "$NETBSD_SRC_DIR" ] ; then
 	echo NETBSD_SRC_DIR not set.
