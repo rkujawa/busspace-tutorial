@@ -1,7 +1,7 @@
-busspace-eurobsdcon2012
-=======================
+busspace-tutorial
+=================
 
-Materials for the EuroBSDcon 2012 bus_space(9) tutorial.
+Materials for the bus_space(9) tutorial.
 
 Prerequisites for running the materials:
 - UNIX-like operating system, preferably NetBSD
