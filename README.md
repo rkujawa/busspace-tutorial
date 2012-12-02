@@ -23,11 +23,11 @@ Manual installation
 If you don't want to use the scripts, or the scripts do not work for you,
 materials can be installed manually:
 
-- Clone the bus_space tutorial repository: https://github.com/rkujawa/busspace-eurobsdcon2012
-- Clone the modified GXemul repository: https://github.com/rkujawa/gxemul-eurobsdcon2012
+- Clone the bus_space tutorial repository: https://github.com/rkujawa/busspace-tutorial
+- Clone the modified GXemul repository: https://github.com/rkujawa/gxemul-busspace-tutorial
 - Build the GXemul (configure, make...)
-- Download and uncompress the NetBSD/cobalt filesystem image: https://github.com/downloads/rkujawa/busspace-eurobsdcon2012/netbsd-cobalt.img.bz2
-- Download and extract the NetBSD source: https://github.com/downloads/rkujawa/busspace-eurobsdcon2012/netbsd-20121002.tar.bz2
+- Download and uncompress the NetBSD/cobalt filesystem image: https://github.com/downloads/rkujawa/busspace-tutorial/netbsd-cobalt.img.bz2
+- Download and extract the NetBSD source: https://github.com/downloads/rkujawa/busspace-tutorial/netbsd-20121002.tar.bz2
 - Change directory to the NetBSD source directory and build the NetBSD/cobalt tools and kernel: ./build.sh -m cobalt -U tools && ./build.sh -m cobalt -U kernel=GENERIC
 - Run the GXemul Cobalt emulation with the newly built kernel
 

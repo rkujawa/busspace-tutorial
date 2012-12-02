@@ -13,8 +13,8 @@ LOG_NETBSD_SRC=/tmp/setup-netbsd-src.log
 
 GITHUB_URL=https://github.com
 GITHUB_ACCOUNT=rkujawa
-REPO_BUSSPACE_NAME=busspace-eurobsdcon2012
-REPO_GXEMUL_NAME=gxemul-eurobsdcon2012
+REPO_BUSSPACE_NAME=busspace-tutorial
+REPO_GXEMUL_NAME=gxemul-busspace-tutorial
 NETBSD_SRC_FILE=netbsd-20121002.tar.bz2
 NETBSD_SRC_DIR=src-clean
 NETBSD_COBALT_IMG_FILE=netbsd-cobalt.img.bz2
