@@ -27,7 +27,7 @@
 % POSSIBILITY OF SUCH DAMAGE.
 %
 %
-% Presentation for bus_space(9) tutorial for EuroBSDCon 2012
+% Presentation for NetBSD drivers tutorial for Snow B.V.
 %
 % TeX layout based on examples provided by Jean-Yves Migeon
 %
@@ -106,7 +106,7 @@
 
 }
 
-\title{Writing NetBSD drivers\\with the bus\_space(9) framework}
+\title{Writing NetBSD drivers -- a crash course}
 
 \author{Radoslaw Kujawa -- rkujawa@NetBSD.org}
 
@@ -128,12 +128,12 @@
 
 \section{Introduction}
 
-\subsection{Why was this tutorial created?}
+\subsection{Hello!}
 
 \begin{frame}
-\frametitle{Why was this tutorial created?}
+\frametitle{Foo}
 \begin{itemize}
-	\item Introductory-level documentation is scarce
+	\item EuroBSDcon 2012 -- 4 people attended the tutorial
 	\item Writing device drivers is often considered black magic
 	\item Reading the {\tt man} pages won't give you the big picture
 	\item BSD systems are always in need of new drivers
@@ -141,46 +141,30 @@
 \end{itemize}
 \end{frame}
 
-\subsection{What won't be covered here?}
+
+\subsection{Basic concepts}
 
 \begin{frame}
-\frametitle{What won't be covered here?}
-We don't have much time, so several \sout{advanced} topics were omitted:
+\frametitle{Basic concepts}
 \begin{itemize}
-	\item Interrupt handling
-	\item Direct Memory Access and the {\tt bus\_dma} framework
-	\item Power management
-	\item Driver detachment
-	\item Drivers as kernel modules
-	\item Examples for buses other than PCI
-	\item Pretty much everything else...
-\end{itemize}
-However, once you finish this tutorial, you should be able to pursue this knowledge yourself.
-\end{frame}
-
-\subsection{What is a driver anyway?}
-
-\begin{frame}
-\frametitle{What is a driver anyway?}
-\begin{itemize}
-	\item The interface between user space and hardware, implemented as a part of the kernel
-	\item The NetBSD drivers are written mostly in C
-	\item Sometimes they have machine dependent assembler parts, but this is a rare case
+	\item What is a driver anyway?
+	\begin{itemize}
+		\item The interface between user space and hardware, implemented as a part of the kernel
+		\item The NetBSD drivers are written mostly in C
+		\item Sometimes they have machine dependent assembler parts, but this is a rare case
+	\end{itemize}
+	\item What do you need to write a driver?
+	\begin{itemize}
+		\item C programming skills
+		\item Hardware documentation (or the ability to reverse engineer the hardware)
+		\item A reference driver implementation will help but is not essential
+		\item A NetBSD installation and kernel source, or a cross-build environment (the latter is usually preferred for development of drivers)
+		\item A lot of time, coffee and patience {\Large \smiley}
+	\end{itemize}
 \end{itemize}
 \end{frame}
 
-\subsection{What do you need to write a driver?}
-
-\begin{frame}
-\frametitle{What do you need to write a driver?}
-\begin{itemize}
-	\item C programming skills
-	\item Hardware documentation (or the ability to reverse engineer the hardware)
-	\item A reference driver implementation will help but is not essential
-	\item A NetBSD installation and kernel source, or a cross-build environment (the latter is usually preferred for development of drivers)
-	\item A lot of time, coffee and patience {\Large \smiley}
-\end{itemize}
-\end{frame}
+\subsection{}
 
 \begin{frame}
 \frametitle{Why is writing the device drivers considered difficult?}
@@ -1423,42 +1407,6 @@ faa0: got ioctl with a 3, b 7
 \begin{itemize}
 	\item The program is successfully accessing the {\tt faa} driver through the {\tt ioctl}	
 	\item The {\tt faa0:...} line is a kernel message, normally only seen on the console terminal
-\end{itemize}
-\end{frame}
-
-\section{A few tips}
-
-\subsection{Avoiding common pitfalls}
-
-\begin{frame}
-\frametitle{Avoiding common pitfalls}
-
-\begin{itemize}
-	\item Always free resources allocated in the {\tt match} or {\tt probe} functions
-	\item Always use {\tt bus\_space} methods, don't access the hardware using a pointer dereference
-	\item If possible test on more than one hardware architecture, some bugs may surface
-	\item Don't reinvent the wheel, try to use existing kernel frameworks as much as possible
-	\item Use {\tt copy(9)} (or {\tt uiomove(9)} or {\tt store(9)}/{\tt fetch(9)}) to move data between the kernel and user space
-	\end{itemize}
-\end{frame}
-
-\subsection{Basic driver debugging}
-
-\begin{frame}
-\frametitle{Basic driver debugging} 
-\begin{itemize}
-	\item Use {\tt aprint\_debug} to print debug-level messages on console and log them (enabled by passing {\tt AB\_DEBUG} from the boot loader)
-	\item Use the built-in DDB debugger
-	\begin{itemize}
-			\item Enabled by the kernel option {\tt DDB}
-			\item A kernel panic will start DDB if the {\tt DDB\_ONPANIC=1} kernel option is specified or the {\tt ddb.onpanic} sysctl is set to 1.
-			\item Run {\tt \# sysctl -w kern.panic\_now=1} to trigger a panic manually ({\tt DIAGNOSTIC} option)
-	\end{itemize}	
-	\item Remote debugging is possible on some ports
-	\begin{itemize}
-			\item With KGDB through the serial port
-			\item With IPKDB through the network
-	\end{itemize}	
 \end{itemize}
 \end{frame}
 
