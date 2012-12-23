@@ -128,13 +128,12 @@
 
 \section{Introduction}
 
-\subsection{Hello!}
-
 \begin{frame}
-\frametitle{Foo}
+\frametitle{About this tutorial}
 \begin{itemize}
 	\item EuroBSDcon 2012 -- 4 people attended the tutorial
-	\item Writing device drivers is often considered black magic
+	\item Writing device drivers is often considered black magic -- it's not!
+	\item Kernel-level programming is often discouraged
 	\item Reading the {\tt man} pages won't give you the big picture
 	\item BSD systems are always in need of new drivers
 	\item Device drivers are fun {\Large \smiley}
@@ -155,51 +154,25 @@
 	\end{itemize}
 	\item What do you need to write a driver?
 	\begin{itemize}
-		\item C programming skills
+		\item C programming skills, good understanding of OS and computer architecture
 		\item Hardware documentation (or the ability to reverse engineer the hardware)
 		\item A reference driver implementation will help but is not essential
 		\item A NetBSD installation and kernel source, or a cross-build environment (the latter is usually preferred for development of drivers)
 		\item A lot of time, coffee and patience {\Large \smiley}
+
 	\end{itemize}
 \end{itemize}
 \end{frame}
 
-\subsection{}
-
-\begin{frame}
-\frametitle{Why is writing the device drivers considered difficult?}
-\begin{itemize}
-	\item It's not as difficult as you may expect, in fact during this tutorial we'll prove that it's quite easy
-	\item You need to think on a very low level
-	\begin{itemize}
-		\item Good understanding of computer architecture is a must
-	\end{itemize}
-	\item Often documentation is the main problem -- writing the driver is not possible if you don't understand how the device works
-	\begin{itemize}
-		\item No access to documentation (uncooperative hardware vendors, vendors out of business)
-		\item Documentation is incomplete or plain wrong
-		\item Reverse engineering can solve these problems but it's a very time consuming process
-	\end{itemize}
-\end{itemize}
-\end{frame}
-
-\section{The NetBSD driver model}
-\subsection{The NetBSD kernel basics}
-
-\begin{frame}
-\frametitle{The NetBSD kernel basics}
-\begin{itemize}
-	\item NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
-	\item Thanks to the above, communication between drivers and other kernel layers is simple
-	\item However, it also means that one badly written driver can affect the whole kernel
-	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf}, etc.) 
-\end{itemize}
-\end{frame}
+\subsection{The NetBSD driver model}
 
 \begin{frame}
 \frametitle{The NetBSD source directory structure}
 \begin{itemize}
-	\item We'll only cover parts interesting for a device driver programmer
+	\item NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
+	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf}, etc.) 
+	\item High quality, machine-independent (MI) drivers are an important factor that adds to NetBSD portability
+	\item We'll only cover kernel parts interesting for a device driver programmer
 	\item {\tt src/sys/} - kernel source directory
 	\item {\tt src/sys/dev/} - machine-independent device drivers
 	\item {\tt src/sys/arch/} - port-specific or architecture-specific parts (such as the low-level system initialisation procedures or machine-dependent drivers)
@@ -207,8 +180,6 @@
 
 \end{itemize}
 \end{frame}
-
-\subsection{Kernel autoconfiguration framework}
 
 \begin{frame}
 \frametitle{Kernel autoconfiguration framework - autoconf(9)}
@@ -225,79 +196,9 @@
     \begin{itemize}
     	\item Additional information about the driver state or device configuration
 	\end{itemize}
+	\item Let's see how it looks like...
 \end{itemize}
 \end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Autoconfiguration as seen in the dmesg}
-\tiny
-\begin{verbatim}
-NetBSD 6.99.12 (GENERIC) #7: Fri Oct  5 18:43:21 CEST 2012
-        rkujawa@saiko.local:/Users/rkujawa/netbsd-eurobsdcon2012/src/sys/arch/cobalt/compile/obj/GENERIC
-Cobalt Qube 2
-total memory = 32768 KB
-avail memory = 27380 KB
-mainbus0 (root)
-com0 at mainbus0 addr 0x1c800000 level 3: ns16550a, working fifo
-com0: console
-cpu0 at mainbus0: QED RM5200 CPU (0x28a0) Rev. 10.0 with built-in FPU Rev. 1.0
-cpu0: 48 TLB entries, 256MB max page size
-cpu0: 32KB/32B 2-way set-associative L1 instruction cache
-cpu0: 32KB/32B 2-way set-associative write-back L1 data cache
-mcclock0 at mainbus0 addr 0x10000070: mc146818 compatible time-of-day clock
-panel0 at mainbus0 addr 0x1f000000
-gt0 at mainbus0 addr 0x14000000
-pci0 at gt0
-pchb0 at pci0 dev 0 function 0: Galileo GT-64011 System Controller, rev 1
-pcib0 at pci0 dev 9 function 0
-pcib0: VIA Technologies VT82C586 PCI-ISA Bridge, rev 57
-viaide0 at pci0 dev 9 function 1
-viaide0: VIA Technologies VT82C586 (Apollo VP) ATA33 controller
-viaide0: primary channel interrupting at irq 14
-atabus0 at viaide0 channel 0
-viaide0: secondary channel interrupting at irq 15
-atabus1 at viaide0 channel 1
-wd0 at atabus0 drive 0
-wd0: <netbsd-cobalt.img>
-wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{verbatim}
-\end{frame}
-
-\begin{frame}
-\frametitle{Autoconfiguration as seen in the dmesg}
-\begin{center}
-\includegraphics[scale=0.4]{img_cobaltdevices.png}
-\end{center}
-\end{frame}
-
-\begin{frame}
-\frametitle{The {\tt bus\_space(9)} framework}
-\begin{itemize}
-	\item ``The goal of the {\tt bus\_space} functions is to allow a single
-     driver source file to manipulate a set of devices on different system
-     architectures, and to allow a single driver object file to manipulate a
-     set of devices on multiple bus types on a single architecture.''
-     \item Provides a set of functions implementing common operations on the bus like mapping, reading, writing, copying, etc.
-     \item The {\tt bus\_space(9)} is implemented at the machine-dependent level (typically it's a part of architecture-specific code), but all implementations present the same interface\footnote{At least they should, some functions are missing on less popular ports}
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Machine independent drivers}
-
-\begin{itemize}
-	\item If possible drivers should work on any hardware platform
-	\item High quality, machine-independent (MI) drivers are an important factor that adds to NetBSD portability
-	\item Some drivers are completely MI, some have MD or bus dependent attachments and some are completely MD
-	\begin{itemize}
-		\item A driver for a typical PCI card will be completely MI
-		\item A driver for the components of a SoC will usually be completely MD
-	\end{itemize}
-	\item The {\tt bus\_space} abstraction helps to achieve portability, transparently handling endianness issues and hiding bus implementation details from the device driver
-	\item Even if we have MI drivers, writing the drivers is always significant part of effort needed to port NetBSD to new hardware
-\end{itemize}
-\end{frame}
-
-%\subsection{Skeleton of the driver}
 
 \section{Example driver from scratch}
 
@@ -317,24 +218,14 @@ wd0: 750 MB, 1524 cyl, 16 head, 63 sec, 512 bytes/sect x 1536192 sectors\end{ver
 \end{itemize}
 \end{frame}
 
-\subsection{Quick introduction to {\tt GXemul}}
-
-\begin{frame}
-\frametitle{Quick introduction to {\tt GXemul}}
-\begin{itemize}
-	\item A framework for full-system computer architecture emulation, excellent for educational purposes
-	\item Capable of emulating several real machines supported by NetBSD
-	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus
-	\item I've modified {\tt GXemul} and implemented an emulation of an additional PCI device
-	\item It will be used to show (almost) a real-life example of the driver development process
-\end{itemize}
-\end{frame}
-
 \subsection{Our hardware - a fake PCI card}
 
 \begin{frame}
 \frametitle{Our hardware - functional description}
 \begin{itemize}
+	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus using {\tt GXemul}
+	\item I've modified {\tt GXemul} and implemented an emulation of an additional PCI device
+	\item \...
 	\item Business applications often use arithmetic operations like addition
 	\item Fake Cards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
 	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for NetBSD!
@@ -464,7 +355,7 @@ Bit & R/W & Description \\
 \end{itemize}
 \end{frame}
 
-\subsection{Matching the PCI device}
+\subsection{Matching and attaching the PCI device}
 
 \begin{frame}[fragile]
 \frametitle{Modifying the PCI device database}
@@ -670,26 +561,6 @@ struct faa_softc {
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Adding the new PCI driver - registering the driver (courtesy)}
-\scriptsize
-\begin{itemize}
-	\item {\tt src/sys/dev/DEVNAMES}
-\end{itemize}
-\begin{verbatim}
---- DEVNAMES	1 Sep 2012 11:19:58 -0000	1.279
-+++ DEVNAMES	6 Oct 2012 19:59:06 -0000
-@@ -436,6 +436,7 @@
- ex			MI
- exphy			MI
- ezload			MI		Attribute
-+faa			MI
- fb			luna68k
- fb			news68k
- fb			newsmips
-\end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile]
 \frametitle{Adding the new PCI driver - registering the driver}
 \scriptsize
 \begin{itemize}
@@ -739,18 +610,11 @@ struct faa_softc {
 \end{itemize}
 \end{frame}
 
-\begin{frame}
-\frametitle{Adding the new PCI driver - example}
-\begin{itemize}
-	\item The driver should compile now
-	\item The driver's match function will check if the driver is able to work with a given device
- 	\item Since it is not implemented, the kernel will not attach the driver
-\end{itemize}
-\end{frame}
-
 \begin{frame}[fragile]
 \frametitle{Matching the PCI device}
 \begin{itemize}
+	\item The driver's match function will check if the driver is able to work with a given device
+ 	\item Since it is not implemented, the kernel will not attach the driver
 	\item Modify the {\tt faa\_match} function to match the specified PCI device
 	\item Use {\tt PCI\_VENDOR} and {\tt PCI\_PRODUCT} macros to obtain the IDs
 \end{itemize}
@@ -770,8 +634,6 @@ faa_match(device_t parent, cfdata_t match, void *aux)
 \end{lstlisting}
 \end{frame}
 
-\subsection{Attaching to the PCI device}
-
 \begin{frame}[fragile]
 \frametitle{Attaching to the PCI device}
 \begin{verbatim}
@@ -782,8 +644,6 @@ faa0 at pci0 dev 12 function 0
 	\item Let's fill the attach function and actually program the hardware
 \end{itemize}
 \end{frame}
-
-\subsection{Variable types used with {\tt bus\_space}}
 
 \begin{frame}
 \frametitle{Variable types used with {\tt bus\_space}}
@@ -1139,12 +999,7 @@ faa0: just checking: 1 + 2 = 3
 \begin{frame}
 \frametitle{Operations on device files}
 \begin{itemize}
-	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}
-	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}
-	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}
-	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}
-	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)}
-	\item and more\dots
+	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)} and more\dots
 	\item Any mix of the above system calls might be used to interface between the kernel and user space
 	\item We'll implement an {\tt ioctl(2)}-based communication mechanism
 
@@ -1411,19 +1266,25 @@ faa0: got ioctl with a 3, b 7
 \end{frame}
 
 \section{Summary}
-\subsection{The end}
 
 \begin{frame}
-\frametitle{Further reading}
+\frametitle{What next?}
+
 \begin{itemize}
+	\item Get the EuroBSDcon version of this tutorial, download the source code and materials for this tutorial
+	\begin{itemize}
+		\item {\small\url{https://github.com/rkujawa/busspace-tutorial}}
+		\item {\small\url{https://github.com/rkujawa/gxemul-tutorial}}
+	\end{itemize} 
+	
 	\item Documentation, articles:
 	\begin{itemize}
 		\item \href{http://www.netbsd.org/docs/kernel/bus_dma.pdf}{A Machine-Independent DMA Framework for NetBSD, Jason R. Thorpe}
 		\item \href{ftp://ftp.netbsd.org/pub/NetBSD/misc/ddwg/NetBSD-driver_writing-1.0.1e.pdf}{Writing Drivers for NetBSD, Jochen Kunz}
 		\item \href{http://www.netbsd.org/docs/kernel/pseudo/}{NetBSD Documentation: Writing a pseudo device}
 		\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?autoconf+9+NetBSD-current}{autoconf(9)}, 
-			\href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_space+9+NetBSD-current}{bus\_space(9)}
-			\href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_dma+9+NetBSD-current}{bus\_dma(9)} 
+			\href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_space+9+NetBSD-current}{bus\_space(9)},
+			\href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_dma+9+NetBSD-current}{bus\_dma(9)},
 			\href{http://netbsd.gw.com/cgi-bin/man-cgi?driver+9+NetBSD-current}{driver(9)}, 
 			\href{http://netbsd.gw.com/cgi-bin/man-cgi?pci+9+NetBSD-current}{pci(9)}
 			{\tt man} pages, etc.
@@ -1433,17 +1294,6 @@ faa0: got ioctl with a 3, b 7
 		\item {\tt tdvfb}, {\tt voodoofb} are fairly good frame buffer driver examples with documentation publicly available.
 		\item {\tt etsec} is a nice example of a more complicated network interface driver
 	\end{itemize}
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{Get the source code}
-
-\begin{itemize}
-	\item Download the source code and materials for this tutorial
-	\item {\small\url{https://github.com/rkujawa/busspace-tutorial}}
-	\item {\small\url{https://github.com/rkujawa/gxemul-tutorial}}
 \end{itemize}
 \end{frame}
 
