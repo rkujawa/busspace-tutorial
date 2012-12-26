@@ -131,12 +131,15 @@
 \begin{frame}
 \frametitle{About this tutorial}
 \begin{itemize}
-	\item EuroBSDcon 2012 -- 4 people attended the tutorial
-	\item Writing device drivers is often considered black magic -- it's not!
-	\item Kernel-level programming is often discouraged
-	\item Reading the {\tt man} pages won't give you the big picture
-	\item BSD systems are always in need of new drivers
-	\item Device drivers are fun {\Large \smiley}
+	\item Why did I create this tutorial?
+	\begin{itemize}
+		\item Writing device drivers is often considered black magic
+		\item Kernel-level programming is generally discouraged
+		\item Reading the {\tt man} pages won't give you the big picture
+		\item BSD systems are always in need of new drivers
+		\item Device drivers are fun {\Large \smiley}
+	\end{itemize}
+	\item Originally this tutorial was delivered at EuroBSDcon 2012 (this is a shortened version)
 \end{itemize}
 \end{frame}
 
@@ -167,16 +170,18 @@
 \subsection{The NetBSD driver model}
 
 \begin{frame}
-\frametitle{The NetBSD source directory structure}
+\frametitle{The NetBSD kernel structure}
 \begin{itemize}
 	\item NetBSD has a classic monolithic UNIX-like kernel - all drivers are running in the same address space
 	\item Numerous in-kernel frameworks standardise the way drivers are written ({\tt bus\_space}, {\tt autoconf}, etc.) 
 	\item High quality, machine-independent (MI) drivers are an important factor that adds to NetBSD portability
 	\item We'll only cover kernel parts interesting for a device driver programmer
+	\begin{itemize}
 	\item {\tt src/sys/} - kernel source directory
 	\item {\tt src/sys/dev/} - machine-independent device drivers
 	\item {\tt src/sys/arch/} - port-specific or architecture-specific parts (such as the low-level system initialisation procedures or machine-dependent drivers)
 	\item {\tt src/sys/arch/\$PORTNAME/conf/} - kernel configuration files for a given port
+	\end{itemize}
 
 \end{itemize}
 \end{frame}
@@ -221,25 +226,20 @@
 \subsection{Our hardware - a fake PCI card}
 
 \begin{frame}
-\frametitle{Our hardware - functional description}
+\frametitle{Our hardware - technical details}
+
 \begin{itemize}
-	\item We'll emulate a \href{http://en.wikipedia.org/wiki/Cobalt_Qube}{Cobalt}, MIPS-based micro server with PCI bus using {\tt GXemul}
-	\item I've modified {\tt GXemul} and implemented an emulation of an additional PCI device
-	\item \...
+\item Functional description
+\begin{itemize}
 	\item Business applications often use arithmetic operations like addition
 	\item Fake Cards Inc. responded to market needs and created a new product, Advanced Addition Accelerator
 	\item Pointy Haired Bosses will certainly buy it to accelerate their business applications, so let's create a driver for NetBSD!
 \end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Our hardware - technical details}
-\begin{itemize}
-\item Overview
+\item Technical details
 \begin{itemize}
 	\item Implemented as a PCI device
 	\item Arithmetic unit capable of addition of two numbers
-	\item Four\footnote{Only three of these registers are of any importance for us at this moment} registers in the PCI memory space
+	\item Three registers in the PCI memory space
 \end{itemize}
 \item PCI configuration space
 \begin{itemize}
@@ -254,10 +254,10 @@
 \begin{frame}
 \label{faaop}
 \frametitle{Our hardware - technical details (memory mapped register set)}
-\scriptsize
 \begin{itemize}
 	\item Advanced Addition Acceleration registers
 \end{itemize}
+\tiny
 \begin{center}
 \begin{tabular}{|c|c|c|}
 \hline
@@ -289,16 +289,7 @@ Bit & R/W & Description \\
 \hline
 \end{tabular}
 \end{center}
-\begin{itemize}
-	\item Selecting internal register A and B at the same time will lead to undefined behaviour
-\end{itemize}
-\end{frame}
 
-
-
-\begin{frame}
-\frametitle{Our hardware - technical details (memory mapped register set)}
-\scriptsize
 \begin{itemize}
 	\item DATA register
 \end{itemize}
@@ -312,6 +303,7 @@ Bit & R/W & Description \\
 \hline
 \end{tabular}
 \end{center}
+
 \begin{itemize}
 	\item RESULT register 
 \end{itemize}
@@ -325,6 +317,7 @@ Bit & R/W & Description \\
 \hline
 \end{tabular}
 \end{center}
+
 \end{frame}
 
 \begin{frame}
@@ -366,52 +359,18 @@ not configured
 \end{verbatim}
 \begin{itemize}
 	\item The kernel does not know anything about this vendor and device
-	\item Add it to the PCI device database - {\tt src/sys/dev/pci/pcidevs}
+	\item Add it to the PCI device db - {\tt src/sys/dev/pci/pcidevs}
 	\item {\tt vendor VENDORNAME 0xVENDORID Long Vendor Name}
 	\item {\tt product VENDORNAME PRODUCTNAME 0xPRODUCTID	Long Product Name}
 	\item To regenerate pcidevs*.h run {\tt awk -f devlist2h.awk pcidevs} or
 {\tt Makefile.pcidevs} if you're on NetBSD
+
 \end{itemize}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Modifying the PCI device database - example}
-\scriptsize
-\begin{verbatim}
---- pcidevs	29 Sep 2012 10:26:14 -0000	1.1139
-+++ pcidevs	5 Oct 2012 08:52:59 -0000
-@@ -669,6 +669,7 @@
- vendor CHRYSALIS	0xcafe	Chrysalis-ITS
- vendor MIDDLE_DIGITAL	0xdeaf	Middle Digital
- vendor ARC		0xedd8	ARC Logic
-+vendor FAKECARDS	0xfabc	Fake Cards
- vendor INVALID		0xffff	INVALID VENDOR ID
- 
- /*
-@@ -2120,6 +2121,9 @@
- /* Eumitcom products */
- product EUMITCOM WL11000P	0x1100	WL11000P PCI WaveLAN/IEEE 802.11
- 
-+/* FakeCards products */
-+product FAKECARDS AAA		0x0001	Advanced Addition Accelerator
-+
- /* O2 Micro */
- product O2MICRO 00F7		0x00f7	Integrated OHCI IEEE 1394 Host Controller
- product O2MICRO OZ6729		0x6729	OZ6729 PCI-PCMCIA Bridge
-\end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Modifying the PCI device database - example}
 \begin{verbatim}
 Fake Cards Advanced Addition Accelerator (Co-processor 
 processor, revision 0x01) at pci0 dev 12 function 0 
 not configured
 \end{verbatim}
-\begin{itemize}
-	\item Now the kernel knows the vendor and product ID
-	\item But there's still no driver for this device
-\end{itemize}
 \end{frame}
 
 \begin{frame}
@@ -443,54 +402,13 @@ not configured
 	\item Should also include {\tt faareg.h} and {\tt faavar.h} files
 	\item A minimal driver needs just two functions
 	\begin{itemize}
-		\item {\tt faa\_match} (or {\tt faa\_probe} for some buses)
-		\item {\tt faa\_attach}
+		\item {\tt static int faa\_match(device\_t parent, cfdata\_t match, void *aux);}
+		\item {\tt static void faa\_attach(device\_t parent, device\_t self, void *aux);}
 	\end{itemize}
-	\item The {\tt CFATTACH\_DECL\_NEW} macro plugs the above functions into {\tt autoconf(9)} mechanism
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Adding the new PCI driver - main driver}
-\begin{itemize}
-	\item {\tt static int faa\_match(device\_t parent, cfdata\_t match, void *aux);}	
-	\begin{itemize}
-		\item Check if the driver should attach to a given device (for example in case of PCI bus, it will be used to check vendor and product ID)
-		\item {\tt parent} - pointer to parent's driver device structure
-		\item {\tt match} - pointer to {\tt autoconf(9)} details structure
-		\item {\tt aux} - despite the name the most important argument, usually contains bus-specific structure describing device details
-	\end{itemize}
-	\item {\tt static void faa\_attach(device\_t parent, device\_t self, void *aux);}
-	\begin{itemize}
-		\item Attach the driver to a given device
-		\item {\tt parent} - same as with match function
-		\item {\tt self} - pointer to driver's device structure
-		\item {\tt aux} - same as with match function
-	\end{itemize}
-
-	\item See definitions of these functions in the \href{http://netbsd.gw.com/cgi-bin/man-cgi?driver+9+NetBSD-current}{driver(9)} man page.
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Adding the new PCI driver - main driver cont'd}
-\begin{itemize}
-	\item {\tt CFATTACH\_DECL\_NEW(faa, sizeof(struct faa\_softc),
+	\item The {\tt CFATTACH\_DECL\_NEW} macro plugs the above functions into {\tt autoconf(9)} mechanism, for example:
+	{\tt CFATTACH\_DECL\_NEW(faa, sizeof(struct faa\_softc),
     faa\_match, faa\_attach, NULL, NULL);}
-	\begin{itemize}
-		\item driver name
-		\item size of softc structure containing state of driver's instance
-		\item match/probe function
-		\item attach function
-		\item detach function
-		\item activate function
-	\end{itemize}
-	\item The ``\_NEW'' name is unfortunate
-%	XXX: when was it added? still not present in manuals
-%      2007/09/24 .. not exactly recently (nag joerg about lack of docs)
-%	\item This variant was introduced recently and isn't documented well
-	\item Pass {\tt NULL} for unimplemented functions
-	\item We won't cover {\tt detach} and {\tt activate} now, as they are not needed for a simple driver
+	
 \end{itemize}
 \end{frame}
 
@@ -616,7 +534,6 @@ struct faa_softc {
 	\item The driver's match function will check if the driver is able to work with a given device
  	\item Since it is not implemented, the kernel will not attach the driver
 	\item Modify the {\tt faa\_match} function to match the specified PCI device
-	\item Use {\tt PCI\_VENDOR} and {\tt PCI\_PRODUCT} macros to obtain the IDs
 \end{itemize}
 \scriptsize
 \begin{lstlisting}
@@ -632,18 +549,15 @@ faa_match(device_t parent, cfdata_t match, void *aux)
         return 0;
 }
 \end{lstlisting}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Attaching to the PCI device}
+\normalsize
+\begin{itemize}
+	\item The driver has successfully matched and attached to the device
+\end{itemize}
 \begin{verbatim}
 faa0 at pci0 dev 12 function 0
 \end{verbatim}
-\begin{itemize}
-	\item The driver has successfully matched and attached to the PCI device but still is not doing anything useful
-	\item Let's fill the attach function and actually program the hardware
-\end{itemize}
 \end{frame}
+
 
 \begin{frame}
 \frametitle{Variable types used with {\tt bus\_space}}
@@ -653,75 +567,51 @@ faa0 at pci0 dev 12 function 0
          \item {\tt bus\_space\_handle\_t} --  used to describe a mapped range of bus space, usually created with the {\tt bus\_space\_map()} function
          \item {\tt bus\_addr\_t} -- address on the bus
          \item {\tt bus\_size\_t} -- an amount of space on the bus
-         \item Contents of these types are MD, so avoid modifying from within the driver\footnote{although you'll often have to use {\tt bus\_size\_t}}
+         \item Contents of these types are opaque, so avoid modifying from within the driver\footnote{although you'll often have to use {\tt bus\_size\_t}}
 \end{itemize}
 \end{frame}
 
 
 \subsection{Mapping the hardware resources}
 
-\begin{frame}
-\frametitle{Why do we need to ``map'' the resources?}
+
+\begin{frame}[fragile]
+\frametitle{Mapping the hardware resources}
+
 \begin{itemize}
-\huge
 	\item ``The bus space must be mapped before it can be used, and should be unmapped       when it is no longer needed''
 %	\item The kernel has its own virtual address space
 %	\item Physical space can be made visible in kernel virtual address space through the process of mapping
 \normalsize
 	\item It's a machine-dependent process but it's also conveniently hidden from the programmer by the bus\_space framework
-
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}[fragile]
-\frametitle{Mapping the hardware resources}
-
-\begin{itemize}
 	\item The generic bus\_space(9) way to map space
-\end{itemize}
-
+\begin{itemize}
+	\scriptsize
+	\item
 \begin{verbatim}
 bus_space_map(bus_space_tag_t space, bus_addr_t address, 
 bus_size_t size, int flags, bus_space_handle_t  *handlep);
 \end{verbatim}
-
-\begin{itemize}
+	\normalsize
 	\item {\tt bus\_space\_map} creates a mapping from the physical address to a kernel virtual address
-    \item {\tt space} -- represents the bus on which the mapping will be created
-    \item {\tt address} -- typically represents the physical address for which a mapping will be created
-	\item {\tt size} -- describes the amount of bus space to be mapped
-	\item {\tt handlep} -- pointer to mapped space (filled after successful mapping)
-    \item Separate space and address
 \end{itemize}
-\end{frame}
 
-\begin{frame}[fragile]
-\frametitle{Mapping the hardware resources}
-
-\begin{itemize}
 	\item The PCI-specific way to map space
-\end{itemize}
-\scriptsize
-\begin{verbatim}
-pci_mapreg_map(const struct pci_attach_args *pa, int reg, pcireg_t type, 
-int busflags, bus_space_tag_t *tagp, bus_space_handle_t *handlep, 
-bus_addr_t *basep, bus_size_t *sizep);
-\end{verbatim}
-\normalsize
 \begin{itemize}
+	\scriptsize
+	\item
+\begin{verbatim}
+pci_mapreg_map(const struct pci_attach_args *pa, int reg, 
+pcireg_t type, int busflags, bus_space_tag_t *tagp, 
+bus_space_handle_t *handlep, bus_addr_t *basep, bus_size_t *sizep);
+\end{verbatim}
+
+	\normalsize
 	\item {\tt pci\_mapreg\_map} creates mapping from physical address present in specified BAR register to kernel virtual address
-    \item {\tt pa} -- struct describing PCI attachment details (passed through aux)
-    \item {\tt reg} -- BAR register number
-   	\item {\tt type} -- Select mapping type (I/O, memory)
-	\item {\tt busflags} -- Passed to {\tt bus\_space\_map} flags argument
-	\item {\tt tagp} -- pointer to {\tt bus\_space\_tag}
-	\item {\tt handlep} -- pointer to a mapped space
-	\item {\tt basep} -- address of a mapped space
-	\item {\tt sizep} -- size of mapped space (equivalent to BAR size)
-	\item The last four parameters are filled after successful mapping
+\end{itemize}
 \end{itemize}
 \end{frame}
+
 
 \begin{frame}[fragile]
 \frametitle{Mapping the registers using BAR - adding auxiliary includes}
@@ -885,19 +775,14 @@ faa0: registers at 0x10110000
 \end{verbatim}
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
 \frametitle{Implementing addition using the hardware}
 \begin{itemize}
 	\item The basic principle of device operation should be laid out in the data sheet
 	\item We need to implement an algorithm based on this description \hyperlink{faaop}{\beamergotobutton{Jump to device description}}
-	\item Writing such an algorithm is often not needed, since the NetBSD kernel already has frameworks for common device types (such as {\tt atabus/wd} for IDE and SATA hard disk controllers, {\tt wsdisplay/wscons} for frame buffers, etc.)
-\end{itemize}
-\end{frame}
 
-\begin{frame}[fragile]
-\frametitle{Implementing addition using the hardware}
-\begin{itemize}
-	\item Define all registers
+
+	\item But first we should define all registers
 	\item {\tt src/sys/dev/pci/faareg.h}
 \end{itemize}
 \begin{lstlisting}
@@ -909,6 +794,11 @@ faa0: registers at 0x10110000
 #define FAA_DATA                0x8
 #define FAA_RESULT              0xC
 \end{lstlisting}
+
+%\begin{itemize}
+% \item Writing such an algorithm is often not needed, since the NetBSD kernel already has frameworks for common device types (such as {\tt atabus/wd} for IDE and SATA hard disk controllers, {\tt wsdisplay/wscons} for frame buffers, etc.)
+%\end{itemize}
+
 \end{frame}
 
 \begin{frame}[fragile]
@@ -963,7 +853,6 @@ faa0: just checking: 1 + 2 = 3
 \end{verbatim}
 \end{frame}
 
-
 \section{Interacting with userspace}
 
 \subsection{Device files}
@@ -972,15 +861,14 @@ faa0: just checking: 1 + 2 = 3
 \frametitle{The kernel-user space interface}
 \begin{itemize}
 	\item Now that the core functionality of the kernel driver is working, it should be exposed to user space
-	\item The interface between kernel driver and userspace can be designed in many different ways
 	\item The classic UNIX way of interfacing between the kernel and user space is a device file
-	\item Even when using device files there is no single interfacing method that fits all use cases
-	\item It's up to the programmer to define the communication protocol
+	\item It's up to the programmer to define the communication protocol - there is no single interfacing method that fits all use cases
+	\item In NetBSD device files are created statically ({\tt MAKEDEV} script, manually by using the {\tt mknod} utility)
 \end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Device files}
+\frametitle{Operations on device files}
 \begin{itemize}
 	\scriptsize
 	\item {\tt crw-r-----  1 root  wheel  101, 1 Aug 12 21:53 /dev/file}
@@ -988,18 +876,7 @@ faa0: just checking: 1 + 2 = 3
 	\item The kernel identifies which driver should service the request to this file by using major and minor numbers (101 and 1 in the example above)
 	\item The major number identifies the driver
 	\item The minor number usually identifies the driver instance, although the driver is free to use it in any other way
-	\item In NetBSD device files are created statically
-	\begin{itemize}
-		\item By the {\tt MAKEDEV} script during installation or boot
-		\item Manually by using the {\tt mknod} utility
-	\end{itemize}
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Operations on device files}
-\begin{itemize}
-	\item \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)} and more\dots
+	\item System calls: \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)} and more\dots
 	\item Any mix of the above system calls might be used to interface between the kernel and user space
 	\item We'll implement an {\tt ioctl(2)}-based communication mechanism
 
@@ -1009,7 +886,7 @@ faa0: just checking: 1 + 2 = 3
 \begin{frame}[fragile]
 \frametitle{Adding {\tt cdevsw}}
 \begin{itemize}
-	\item {\tt cdevsw} is used to decide which operation on the character device file calls which driver function
+	\item {\tt cdevsw} is used to decide which operation on the character device file calls which driver function (there's also {\tt bdevsw} for block devices, but we won't use it in this example)
 	\item Not all calls have to be implemented, although some device layers define a set of calls that a driver must implement
 	\item For example disk drivers must implement open, close, read, write and ioctl
 \end{itemize}
@@ -1028,15 +905,6 @@ const struct cdevsw faa_cdevsw = {
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}
-\frametitle{Prototyping the {\tt cdevsw} operations}
-\begin{itemize}
-	\item The {\tt dev\_type*} macros are used to prototype the functions passed to {\tt cdevsw}
-	\item Pass {\tt no} followed by a function name to the appropriate {\tt cdevsw} field if it is not implemented  
-	\item There's also {\tt bdevsw} for block devices, but we won't use it in this example
-	\item The last member of the {\tt cdevsw} structure defines the device flags, originally it was used to define the device type (still used for disks, tape drives and ttys, for other devices pass {\tt D\_OTHER})
-\end{itemize}
-\end{frame}
 
 \begin{frame}[fragile]
 \frametitle{Implemeting the {\tt cdevsw} operations - open / close}
@@ -1072,26 +940,21 @@ faaclose(dev_t dev, int flag, int mode, struct lwp *l)
 \end{lstlisting}
 \end{frame}
 
-\begin{frame}
+\subsection{Using ioctls}
+
+\begin{frame}[fragile]
 \frametitle{Defining the {\tt ioctl}s}
 \begin{itemize}
 	\item {\tt ioctl(2)} can be used to call kernel-level functions and exchange data between the kernel and user space
 	\item The classic way of passing data is by using structures, their definitions are shared between the kernel and user space code
 	\item The driver might support more than one {\tt ioctl}, the {\tt \_IO*} macros are used to define the operation and associated structure used to exchange data
 	\begin{itemize}
-		\item {\tt \_IO} - just a kernel function call, no data exchange
-		\item {\tt \_IOR} - kernel function call and data pass from kernel to user space
-		\item {\tt \_IOW} - kernel function call and data pass from user space to kernel
-		\item {\tt \_IOWR} - kernel function call and data exchange in both directions
-		\item {\tt \#define DRIVERIO\_IOCTLNAME	\_IOXXX(group, ioctl\_number, data structure)}
+
+		\item {\tt \#define DRIVERIO\_IOCTLNAME	\_XXX(group, ioctl\_number, data structure)}
+		\item Where {\tt XXX} can be {\tt IO}, {\tt IOR}, {\tt IOW}, {\tt IOWR}
 	\end{itemize}
 \end{itemize}
-\end{frame}
 
-\subsection{Using ioctls}
-
-\begin{frame}[fragile]
-\frametitle{Defining the {\tt ioctl}s}
 \begin{itemize}
 \item {\tt src/sys/dev/pci/faaio.h}
 \end{itemize}
@@ -1106,10 +969,7 @@ struct faaio_add {
     uint32_t *result;
 };
 \end{lstlisting}
-\begin{itemize}
-	\item In the above example the {\tt ioctl} group is not defined ({\tt0}), but a single letter identifier could appear as first argument to {\tt\_IOWR}
-% mention that group numbers aren't defined in any single list, you have to grep the tree for _IO* definitions
-\end{itemize}
+
 \end{frame}
 
 \begin{frame}[fragile]
@@ -1150,17 +1010,6 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 \end{frame}
 
 \begin{frame}
-\frametitle{Using {\tt copyout} to pass data to userspace}
-\begin{itemize}
-	\item The {\tt copy(9)} functions are used to copy kernel space data from/to user space
-	\item {\tt copyout(kernel\_address, user space\_address, size);}
-	\item Actually on Cobalt we could just do {\tt *data->result = faa\_add();} instead of calling the {\tt copyout} function, but that is a bad idea
-	\item Some architectures (such as {\tt sparc64}) have totally separate kernel and user address spaces $ \implies $ user space addresses are meaningless in the kernel
-
-\end{itemize}
-\end{frame}
-
-\begin{frame}
 \frametitle{Defining device major number}
 \begin{itemize}
 	\item Device major numbers for hardware drivers are usually defined in a per-port manner\footnote{It's also possible to define a major in a machine-independent way in {\tt src/sys/conf/majors}}
@@ -1168,40 +1017,19 @@ faaioctl_add(struct faa_softc *sc, struct faaio_add *data)
 	\item {\tt src/sys/arch/cobalt/conf/majors.cobalt}
 	\item The following defines a new character device file called {\tt /dev/faa*} with major number 101, but only if the {\tt faa} driver is included in the kernel (last argument)
 	\item {\tt device-major faa char 101 faa}
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Creating the device node}
-\begin{itemize}
 	\item The {\tt mknod} utility can be used to create the device file manually
-	\item The driver name can be specified instead of the major number - it will be automatically resolved into the correct major number
-	\item {\tt mknod name [b | c] [major | driver] minor}
 	\item {\tt mknod /dev/faa0 c faa 0}
-	\item Created successfully
-	\scriptsize
-	\item {\tt crw-r--r--  1 root  wheel  101, 0 Oct  8  2012 /dev/faa0}
-	\normalsize
+
 \end{itemize}
 \end{frame}
 
 \subsection{An example user space program}
 
-\begin{frame}
-\frametitle{An example user space program}
-\begin{itemize}
-	\item The example program will open the device file and call {\tt ioctl(2)} on it
-	\item As simple as possible, just to show how communication is done
-	\item Using {\tt ioctl}s from the user space
-	\begin{itemize}
-		\item Open the device file with {\tt O\_RDWR}
-		\item Call {\tt ioctl(2)} with the operation number and structure as parameters
-	\end{itemize}
-\end{itemize}
-\end{frame}
-
 \begin{frame}[fragile]
 \frametitle{An example user space program - source}
+\begin{itemize}
+	\item The example program will open the device file and call {\tt ioctl(2)} on it
+\end{itemize}
 \begin{lstlisting}
 void add(int, uint32_t, uint32_t);
 
