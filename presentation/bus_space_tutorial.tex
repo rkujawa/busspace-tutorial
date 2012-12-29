@@ -677,31 +677,8 @@ faa_attach(device_t parent, device_t self, void *aux)
 		\item {\tt space} - tag describing the bus
 		\item {\tt handle} - describes the exact location on the bus where read/write should occur, this handle is obtained by {\tt bus\_space\_map}
 		\item {\tt offset} - offset from handle location
-		\item The read function returns the data read from the specified location, while write has an argument {\tt value} which should be filled with data to be written
 	\end{itemize}
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Variants of bus\_space\_read and bus\_space\_write}
-\begin{center}
-\begin{tabular}{|c|c|c|}
-\hline
-Data & Read function & Write function \\
-\hline
-\hline
-8-bit & bus\_space\_read\_1 & bus\_space\_write\_1 \\
-\hline
-16-bit & bus\_space\_read\_2 & bus\_space\_write\_2 \\
-\hline
-32-bit & bus\_space\_read\_4 & bus\_space\_write\_4 \\
-\hline
-64-bit & bus\_space\_read\_8 & bus\_space\_write\_8 \\
-\hline
-\end{tabular}
-\end{center}
-\begin{itemize}
-	\item There are many more variants of read and write functions and they are useful in certain situations, see the \href{http://netbsd.gw.com/cgi-bin/man-cgi?bus_space++NetBSD-current}{bus\_space(9)} man page
+	\item {\tt X} above equals size of the data to be read/written in bytes (1, 2, 4, 8)
 \end{itemize}
 \end{frame}
 
@@ -1078,6 +1055,14 @@ add(int devfd, uint32_t a, uint32_t b)
 \end{lstlisting}
 \end{frame}
 
+\begin{frame}
+\frametitle{Userspace - kernel communication sequence diagram}
+\vspace*{-0.8cm}
+\begin{center}
+\includegraphics[scale=0.45]{basicflow.png}
+\end{center}
+\end{frame}
+
 \begin{frame}[fragile]
 \frametitle{An example user space program - running it}
 \begin{verbatim}
@@ -1092,6 +1077,7 @@ faa0: got ioctl with a 3, b 7
 	\item The {\tt faa0:...} line is a kernel message, normally only seen on the console terminal
 \end{itemize}
 \end{frame}
+
 
 \section{Summary}
 
