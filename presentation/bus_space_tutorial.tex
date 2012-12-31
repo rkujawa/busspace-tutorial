@@ -486,50 +486,22 @@ struct faa_softc {
 \frametitle{Adding the new PCI driver - registering the driver}
 \scriptsize
 \begin{itemize}
-	\item See {\tt config(5)}
-	\item {\tt src/sys/dev/pci/files.pci}
+	\item Add driver definition to {\tt src/sys/dev/pci/files.pci} (see \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+5+NetBSD-current}{config(5)})
 \end{itemize}
 \begin{verbatim}
---- pci/files.pci	2 Aug 2012 00:17:44 -0000	1.360
-+++ pci/files.pci	6 Oct 2012 19:59:10 -0000
-@@ -1122,3 +1122,9 @@
- device	tdvfb: wsemuldisplaydev, rasops8, vcons, videomode
- attach	tdvfb at pci
- file	dev/pci/tdvfb.c		tdvfb	
-+
-+# FakeCards Advanced Addition Accelerator
-+device	faa
-+attach	faa at pci
-+file	dev/pci/faa.c		faa	
-+
+# FakeCards Advanced Addition Accelerator
+device	faa
+attach	faa at pci
+file	dev/pci/faa.c		faa	
 \end{verbatim}
-\end{frame}
-
-\begin{frame}[fragile]
-\frametitle{Adding the new PCI driver to the kernel configuration}
-\scriptsize
 \begin{itemize}
-	\item {\tt src/sys/arch/cobalt/conf/GENERIC}
+	\item Add the new PCI driver to the kernel configuration - {\tt src/sys/arch/cobalt/conf/GENERIC}
+	\item The below definition means that an instance of {\tt faa} may be attached to any PCI bus, any device, any function
 \end{itemize}
 \begin{verbatim}
---- GENERIC	10 Mar 2012 21:51:50 -0000	1.134
-+++ GENERIC	6 Oct 2012 20:12:37 -0000
-@@ -302,6 +302,9 @@
- #fms*		at pci? dev ? function ?	# Forte Media FM801
- #sv*		at pci? dev ? function ?	# S3 SonicVibes
- 
-+# Fake Cards Advanced Addition Accelerator
-+faa*		at pci? dev ? function ?
-+
- # Audio support
- #audio*		at audiobus?
+# Fake Cards Advanced Addition Accelerator
+faa*		at pci? dev ? function ?
 \end{verbatim}
-\normalsize
-\begin{itemize}
-	\item The above definition means that an instance of {\tt faa} may be attached to any PCI bus, any device, any function
-	\item The exact position of the rule in the configuration file is not important in this case
-	\item See \href{http://netbsd.gw.com/cgi-bin/man-cgi?config+5+NetBSD-current}{config(5)} for a description of the device definition language
-\end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -563,18 +535,6 @@ faa0 at pci0 dev 12 function 0
 \end{frame}
 
 
-\begin{frame}
-\frametitle{Variable types used with {\tt bus\_space}}
-
-\begin{itemize}
-         \item {\tt bus\_space\_tag\_t} -- type used to describe a particular bus, usually passed to the driver from MI bus structures
-         \item {\tt bus\_space\_handle\_t} --  used to describe a mapped range of bus space, usually created with the {\tt bus\_space\_map()} function
-         \item {\tt bus\_addr\_t} -- address on the bus
-         \item {\tt bus\_size\_t} -- an amount of space on the bus
-         \item Contents of these types are opaque, so avoid modifying from within the driver\footnote{although you'll often have to use {\tt bus\_size\_t}}
-\end{itemize}
-\end{frame}
-
 
 \subsection{Mapping the hardware resources}
 
@@ -599,7 +559,6 @@ bus_size_t size, int flags, bus_space_handle_t  *handlep);
 	\normalsize
 	\item {\tt bus\_space\_map} creates a mapping from the physical address to a kernel virtual address
 \end{itemize}
-
 	\item The PCI-specific way to map space
 \begin{itemize}
 	\scriptsize
@@ -609,12 +568,25 @@ pci_mapreg_map(const struct pci_attach_args *pa, int reg,
 pcireg_t type, int busflags, bus_space_tag_t *tagp, 
 bus_space_handle_t *handlep, bus_addr_t *basep, bus_size_t *sizep);
 \end{verbatim}
-
 	\normalsize
 	\item {\tt pci\_mapreg\_map} creates mapping from physical address present in specified BAR register to kernel virtual address
 \end{itemize}
 \end{itemize}
 \end{frame}
+
+
+\begin{frame}
+\frametitle{Variable types used with {\tt bus\_space}}
+
+\begin{itemize}
+         \item {\tt bus\_space\_tag\_t} -- type used to describe a particular bus, usually passed to the driver from MI bus structures
+         \item {\tt bus\_space\_handle\_t} --  used to describe a mapped range of bus space, usually created with the {\tt bus\_space\_map()} function
+         \item {\tt bus\_addr\_t} -- address on the bus
+         \item {\tt bus\_size\_t} -- an amount of space on the bus
+         \item Contents of these types are opaque, so avoid modifying from within the driver\footnote{although you'll often have to use {\tt bus\_size\_t}}
+\end{itemize}
+\end{frame}
+
 
 
 \begin{frame}[fragile]
