@@ -201,7 +201,7 @@
     \begin{itemize}
     	\item Additional information about the driver state or device configuration
 	\end{itemize}
-	\item Let's see how it looks like...
+	\item Let's see how it looks like in GXemul...
 \end{itemize}
 \end{frame}
 
@@ -226,7 +226,7 @@
 \subsection{Our hardware - a fake PCI card}
 
 \begin{frame}
-\frametitle{Our hardware - technical details}
+\frametitle{Our hardware}
 
 \begin{itemize}
 \item Functional description
@@ -457,6 +457,7 @@ faa_attach(device_t parent, device_t self, void *aux)
 #ifndef FAAREG_H
 #define FAAREG_H
 /* 
+ * This file holds information about available registers and their values.
  * Registers are defined using preprocessor:
  * #define FAA_REGNAME	0x0
  * We'll add them later, let's leave it empty for now.
@@ -470,7 +471,10 @@ faa_attach(device_t parent, device_t self, void *aux)
 #ifndef FAAVAR_H
 #define FAAVAR_H
 
-/* sc_dev is an absolute minimum, we'll add more later */
+/* 
+ * The softc structure is used to hold the driver's instance state.
+ * sc_dev is an absolute minimum, we'll add more later...
+ */
 struct faa_softc {
         device_t sc_dev;
 };
@@ -619,13 +623,13 @@ bus_space_handle_t *handlep, bus_addr_t *basep, bus_size_t *sizep);
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faareg.h}
 \end{itemize}
-\begin{verbatim}
-#define FAA_MMREG_BAR   0x10
-\end{verbatim}
+\begin{lstlisting}
+#define FAA_MMREG_BAR   0x10	/* first BAR is always at 0x10 */
+\end{lstlisting}
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faavar.h}
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 struct faa_softc {
         device_t sc_dev;
 
@@ -634,7 +638,7 @@ struct faa_softc {
         bus_addr_t sc_reg_pa;
 
 };
-\end{verbatim}
+\end{lstlisting}
 \end{frame}
 
 \begin{frame}[fragile]
@@ -841,31 +845,22 @@ faa0: just checking: 1 + 2 = 3
 	\item The classic UNIX way of interfacing between the kernel and user space is a device file
 	\item It's up to the programmer to define the communication protocol - there is no single interfacing method that fits all use cases
 	\item In NetBSD device files are created statically ({\tt MAKEDEV} script, manually by using the {\tt mknod} utility)
-\end{itemize}
-\end{frame}
-
-\begin{frame}
-\frametitle{Operations on device files}
-\begin{itemize}
 	\scriptsize
 	\item {\tt crw-r-----  1 root  wheel  101, 1 Aug 12 21:53 /dev/file}
 	\normalsize
 	\item The kernel identifies which driver should service the request to this file by using major and minor numbers (101 and 1 in the example above)
-	\item The major number identifies the driver
-	\item The minor number usually identifies the driver instance, although the driver is free to use it in any other way
-	\item System calls: \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)} and more\dots
-	\item Any mix of the above system calls might be used to interface between the kernel and user space
-	\item We'll implement an {\tt ioctl(2)}-based communication mechanism
-
+	\item The major number identifies the driver, the minor number (usually) identifies driver instance
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]
-\frametitle{Adding {\tt cdevsw}}
+\frametitle{Operations on device files - adding {\tt cdevsw}}
 \begin{itemize}
+	\item System calls: \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{open(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{close(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?read++NetBSD-current}{read(2)} and \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{write(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{ioctl(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?poll++NetBSD-current}{poll(2)}, \href{http://netbsd.gw.com/cgi-bin/man-cgi?write++NetBSD-current}{mmap(2)} and more\dots
+	\item Any mix of the above system calls might be used to interface between the kernel and user space
+	\item We'll implement an {\tt ioctl(2)}-based communication mechanism
+
 	\item {\tt cdevsw} is used to decide which operation on the character device file calls which driver function (there's also {\tt bdevsw} for block devices, but we won't use it in this example)
-	\item Not all calls have to be implemented, although some device layers define a set of calls that a driver must implement
-	\item For example disk drivers must implement open, close, read, write and ioctl
 \end{itemize}
 \begin{itemize}
 	\item {\tt src/sys/dev/pci/faa.c}
@@ -938,7 +933,7 @@ faaclose(dev_t dev, int flag, int mode, struct lwp *l)
 \begin{lstlisting}
 #include <sys/ioccom.h>
                      
-#define FAAIO_ADD	_IOWR(0, 1, struct faaio_add)
+#define FAAIO_ADD_IOWR(0, 1, struct faaio_add)
 
 struct faaio_add {
     uint32_t a;
@@ -1056,7 +1051,7 @@ add(int devfd, uint32_t a, uint32_t b)
 \end{frame}
 
 \begin{frame}
-\frametitle{Userspace - kernel communication sequence diagram}
+\frametitle{User space - kernel communication sequence diagram}
 \vspace*{-0.8cm}
 \begin{center}
 \includegraphics[scale=0.45]{basicflow.png}
